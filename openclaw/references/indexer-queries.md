@@ -25,7 +25,6 @@ zelle-bofa:  0x4bc42b322a3ad413b91b2fde30549ca70d6ee900eded1681de91aaf32ffd7ab5
 chime:       0x5908bb0c9b87763ac6171d4104847667e7f02b4c47b574fe890c1f439ed128bb
 n26:         0xd9ff4fd6b39a3e3dd43c41d05662a5547de4a878bc97a65bcb352ade493cdc6b
 alipay:      0xcac9daea62d7b89d75ac73af4ee14dcf25721012ae82b568c2ea5c808eaa04ff
-luxon:       (hash pending — low liquidity, verify on peer.xyz)
 ```
 
 ## Currency Code Hashes
@@ -164,37 +163,49 @@ Replace `CURRENCY_HASH` with the hash from the table above.
 
 ### 4. Total platform liquidity
 
+Note: `Deposit_aggregate` is NOT available on this indexer. Sum deposits manually:
+
 ```graphql
 {
-  Deposit_aggregate(
+  Deposit(
+    limit: 200
     where: {
       acceptingIntents: { _eq: true }
       status: { _eq: "ACTIVE" }
+      remainingDeposits: { _gt: "0" }
     }
   ) {
-    aggregate {
-      sum { remainingDeposits }
-      count
-    }
+    remainingDeposits
   }
 }
 ```
 
+Sum all `remainingDeposits` values (divide each by 1e6) to get total liquidity. Count the array length for number of active deposits.
+
 ### 5. Recent fulfilled intents (volume indicator)
+
+Note: `Intent` has no `deposit` relation field. Use `depositId` (string) directly.
 
 ```graphql
 {
   Intent(
     limit: 20
     where: { status: { _eq: "FULFILLED" } }
-    order_by: { updatedAt: desc }
+    order_by: { fulfillTimestamp: desc }
   ) {
     amount
-    updatedAt
-    deposit { depositId }
+    depositId
+    fiatCurrency
+    paymentMethodHash
+    fulfillTimestamp
+    conversionRate
+    releasedAmount
+    takerAmountNetFees
   }
 }
 ```
+
+Available Intent fields: `amount`, `conversionRate`, `depositId`, `expiryTime`, `fiatCurrency`, `fulfillTimestamp`, `fulfillTxHash`, `id`, `intentHash`, `isExpired`, `managerFee`, `managerFeeAmount`, `owner`, `paymentAmount`, `paymentCurrency`, `paymentMethodHash`, `paymentTimestamp`, `releasedAmount`, `signalTimestamp`, `signalTxHash`, `status`, `takerAmountNetFees`, `toAddress`, `updatedAt`, `verifier`.
 
 ## curl Template
 

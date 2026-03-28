@@ -133,8 +133,7 @@ Peer (peer.xyz, formerly ZKP2P) is a peer-to-peer fiat-to-crypto marketplace. It
 | Venmo | USD only | High | 1x | ACH-backed, 90-day reversal window |
 | CashApp | USD only | High | 1x | ACH-backed, 90-day reversal window |
 | PayPal | Multi | Highest | 0.75x | 180-day buyer protection. Requires Peer Plus tier ($2,000 volume) |
-| Chime | USD only | Medium | — | US neobank. Active liquidity with ~1.75-2% spreads |
-| Luxon | — | — | — | Newer method, low liquidity. Verify on peer.xyz |
+| Chime | USD only | Medium | — | US neobank. Liquidity varies |
 | N26 | EUR | — | — | European neobank |
 | Alipay | CNY | — | — | Chinese market |
 
@@ -694,10 +693,10 @@ When the user asks about recent activity, volume, or "what are people buying wit
 ```bash
 curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ Intent(limit: 20, where: {status: {_eq: \"FULFILLED\"}}, order_by: {updatedAt: desc}) { amount updatedAt deposit { depositId } } }"}'
+  -d '{"query": "{ Intent(limit: 20, where: {status: {_eq: \"FULFILLED\"}}, order_by: {fulfillTimestamp: desc}) { amount depositId fiatCurrency paymentMethodHash fulfillTimestamp conversionRate releasedAmount takerAmountNetFees } }"}'
 ```
 
-This returns the latest 20 completed trades with amounts and timestamps.
+This returns the latest 20 completed trades with amounts, payment methods, currencies, and timestamps.
 
 2. **Point them to the Telegram group** for the live feed:
    - Group: https://t.me/zk_p2p
@@ -706,13 +705,15 @@ This returns the latest 20 completed trades with amounts and timestamps.
 
 3. **Query total platform stats**:
 
+Note: `Deposit_aggregate` is not available on this indexer. Sum deposits manually:
+
 ```bash
 curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ Deposit_aggregate(where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}}) { aggregate { sum { remainingDeposits } count } } }"}'
+  -d '{"query": "{ Deposit(limit: 200, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"0\"}}) { remainingDeposits } }"}'
 ```
 
-This shows total active liquidity and number of active deposits — a good health indicator.
+Sum all `remainingDeposits` values (divide each by 1e6) for total liquidity. Count the array length for number of active deposits.
 
 ### Interpreting trade activity
 
