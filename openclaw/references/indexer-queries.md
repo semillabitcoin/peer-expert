@@ -25,6 +25,7 @@ zelle-bofa:  0x4bc42b322a3ad413b91b2fde30549ca70d6ee900eded1681de91aaf32ffd7ab5
 chime:       0x5908bb0c9b87763ac6171d4104847667e7f02b4c47b574fe890c1f439ed128bb
 n26:         0xd9ff4fd6b39a3e3dd43c41d05662a5547de4a878bc97a65bcb352ade493cdc6b
 alipay:      0xcac9daea62d7b89d75ac73af4ee14dcf25721012ae82b568c2ea5c808eaa04ff
+luxon:       (hash pending — listed in SDK docs but no active liquidity yet. Discover via indexer when deposits appear)
 ```
 
 ## Currency Code Hashes

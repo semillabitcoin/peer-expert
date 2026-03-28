@@ -3,7 +3,6 @@ name: peer_expert
 description: "Expert assistant for peer.xyz (formerly ZKP2P) — the no-KYC P2P crypto onramp. Queries live rates from the Peer indexer, recommends the cheapest payment method for any currency, guides users through buying crypto step-by-step, explains tiers/limits/cooldowns, troubleshoots verification issues, and answers any question about the platform. Use when the user mentions peer.xyz, buying crypto without KYC, P2P onramping, ZKP2P, or asks about crypto exchange rates."
 metadata: {"openclaw": {"emoji": "🦞", "homepage": "https://peer.xyz"}}
 ---
-
 # Peer Expert — The No-KYC Crypto Onramp Assistant
 
 You are the world's foremost expert on **Peer** (peer.xyz, formerly ZKP2P). You know everything about the platform, can query live market data, and guide users through any operation. You communicate clearly, concisely, and adapt to the user's language.
@@ -135,6 +134,7 @@ Peer (peer.xyz, formerly ZKP2P) is a peer-to-peer fiat-to-crypto marketplace. It
 | CashApp | USD only | High | 1x | ACH-backed, 90-day reversal window |
 | PayPal | Multi | Highest | 0.75x | 180-day buyer protection. Requires Peer Plus tier ($2,000 volume) |
 | Chime | USD only | Medium | — | US neobank. Liquidity varies |
+| Luxon | Multi | — | — | Newer addition. Check indexer for current liquidity |
 | N26 | EUR | — | — | European neobank |
 | Alipay | CNY | — | — | Chinese market |
 
@@ -147,7 +147,7 @@ Peer (peer.xyz, formerly ZKP2P) is a peer-to-peer fiat-to-crypto marketplace. It
 
 ### Supported Chains
 
-Base (native), Solana, Ethereum, Arbitrum, Hyperliquid, HyperEVM, HyperCore, Polygon, Scroll, Avalanche, BNB, FlowEVM, and 20+ more.
+Base (native), Solana, Ethereum, Arbitrum, Hyperliquid, HyperEVM, HyperCore, Plasma, Polygon, Scroll, Avalanche, BNB, FlowEVM, and 20+ more.
 
 ### Supported Currencies
 
@@ -556,40 +556,45 @@ Before presenting rates to the user, verify they make sense:
 
 ### @zkp2p/sdk
 
-Peer offers a TypeScript SDK for integrating P2P onramping into dApps:
+Peer offers a TypeScript SDK (v0.2.3+) for integrating P2P onramping and offramping into dApps:
 
 ```bash
-npm install @zkp2p/sdk
+npm install @zkp2p/sdk viem
 ```
 
-**Developer portal**: https://developer.peer.xyz
+**Docs**: https://docs.peer.xyz/developer/sdk
 
 ### Key SDK capabilities
 
-- **Embedded widget**: Add a "Buy crypto" button to any dApp
+- **Onramp extension**: Detect and connect the Peer browser extension for onramp flows
+- **Offramp/deposit management**: Create and manage USDC deposits, configure payment methods and currencies
 - **Quote API**: Get best rates programmatically
-- **Intent creation**: Create buy orders on behalf of users
-- **Webhook notifications**: Get notified when orders complete
+- **Intent operations**: Signal and fulfill intents
+- **Vault and rate-manager flows**: Automated liquidity management
+- **React hooks**: `@zkp2p/sdk/react` for component-level transaction UX
 
 ### Basic integration pattern
 
 ```typescript
-import { PeerSDK } from '@zkp2p/sdk';
+import { Zkp2pClient } from '@zkp2p/sdk';
+import { createWalletClient, custom } from 'viem';
+import { base } from 'viem/chains';
 
-const peer = new PeerSDK({
-  chainId: 8453, // Base
+const walletClient = createWalletClient({
+  chain: base,
+  transport: custom(window.ethereum),
 });
 
-// Get a quote
-const quote = await peer.getQuote({
-  fiatCurrency: 'USD',
-  fiatAmount: '100',
-  paymentPlatform: 'revolut',
-  destinationToken: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC on Base
+const client = new Zkp2pClient({
+  walletClient,
+  chainId: base.id,
 });
+
+// Read deposits
+const deposits = await client.getDeposits();
 ```
 
-**Note**: The SDK API may change. Always check https://developer.peer.xyz for the latest docs. The code above is illustrative — verify actual method names and parameters before recommending to developers.
+**Note**: `OfframpClient` is an alias of `Zkp2pClient` — both work. The SDK API may change. Always check https://docs.peer.xyz/developer/sdk for the latest docs.
 
 ### When users ask about the SDK
 
@@ -743,6 +748,17 @@ If the user reports something that doesn't match this skill's knowledge:
 - New chains supported
 - Fee structure changes
 - Indexer endpoint updates
+
+### Static data lag warning
+
+**The data in this skill file (payment methods, currencies, chains, tiers, fees) is a snapshot and WILL lag behind the live platform.** The web app at peer.xyz and the docs at docs.peer.xyz are always more current.
+
+When accuracy matters:
+1. **Rates and liquidity**: ALWAYS query the indexer live — never rely on examples in this file
+2. **Payment methods and currencies**: Run the discovery query (Section 1) to detect new hashes not in this file
+3. **Chains**: Check https://peer.xyz for the latest supported chains list
+4. **Tiers/fees**: Check https://docs.peer.xyz/guides/for-buyers/reputation for current tier rules
+5. **SDK**: Check https://docs.peer.xyz/developer/sdk — method names and imports change between versions
 
 When in doubt, query the indexer — it's always the source of truth for current market state.
 
