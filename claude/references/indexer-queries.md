@@ -22,8 +22,10 @@ mercadopago: 0xa5418819c024239299ea32e09defae8ec412c03e58f5c75f1b2fe84c857f5483
 zelle-citi:  0x817260692b75e93c7fbc51c71637d4075a975e221e1ebc1abeddfabd731fd90d
 zelle-chase: 0x6aa1d1401e79ad0549dced8b1b96fb72c41cd02b32a7d9ea1fed54ba9e17152e
 zelle-bofa:  0x4bc42b322a3ad413b91b2fde30549ca70d6ee900eded1681de91aaf32ffd7ab5
+chime:       0x5908bb0c9b87763ac6171d4104847667e7f02b4c47b574fe890c1f439ed128bb
 n26:         0xd9ff4fd6b39a3e3dd43c41d05662a5547de4a878bc97a65bcb352ade493cdc6b
 alipay:      0xcac9daea62d7b89d75ac73af4ee14dcf25721012ae82b568c2ea5c808eaa04ff
+luxon:       (hash pending — low liquidity, verify on peer.xyz)
 ```
 
 ## Currency Code Hashes

@@ -132,7 +132,7 @@ USD, EUR, GBP, CAD, AUD, CHF, MXN, ARS, NZD, SGD, JPY, INR, HKD, CNY, TRY, THB, 
 
 ## Supported payment methods
 
-Revolut, Wise, Venmo, CashApp, PayPal, Monzo, Zelle (Citi/Chase/BofA), MercadoPago, N26, Alipay — **12 methods** across low/medium/high risk tiers.
+Revolut, Wise, Venmo, CashApp, PayPal, Monzo, Zelle (Citi/Chase/BofA), MercadoPago, Chime, Luxon, N26, Alipay — **14 methods** across low/medium/high risk tiers.
 
 ## Supported chains
 

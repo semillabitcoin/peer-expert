@@ -133,6 +133,8 @@ Peer (peer.xyz, formerly ZKP2P) is a peer-to-peer fiat-to-crypto marketplace. It
 | Venmo | USD only | High | 1x | ACH-backed, 90-day reversal window |
 | CashApp | USD only | High | 1x | ACH-backed, 90-day reversal window |
 | PayPal | Multi | Highest | 0.75x | 180-day buyer protection. Requires Peer Plus tier ($2,000 volume) |
+| Chime | USD only | Medium | — | US neobank. Active liquidity with ~1.75-2% spreads |
+| Luxon | — | — | — | Newer method, low liquidity. Verify on peer.xyz |
 | N26 | EUR | — | — | European neobank |
 | Alipay | CNY | — | — | Chinese market |
 
@@ -656,14 +658,64 @@ Peer has run point-based reward systems (similar to airdrop farming):
 
 ### Mobile App
 
-- Peer has announced mobile app development (Peer Platinum members got early access)
-- Current status: check the App Store / Play Store for "Peer" or "ZKP2P"
-- The web app (peer.xyz) works on mobile browsers but the PeerAuth extension requires Chrome desktop
-- If a user asks about mobile: "The Peer web app works on mobile, but verification currently requires the PeerAuth Chrome extension on desktop. Check peer.xyz or their Twitter for mobile app updates."
+- Peer now has a mobile app available — the website shows a "DOWNLOAD APP" option alongside "OPEN APP"
+- Check the App Store / Play Store for "Peer"
+- The web app (peer.xyz) also works on mobile browsers
+- If a user asks about mobile: "Peer has a mobile app available. Look for the 'Download App' button on peer.xyz, or search for it in your app store."
 
 ---
 
-## SECTION 14: LIVE TRADE FEED (Telegram)
+## SECTION 14: VAULTS (Yield for Liquidity Providers)
+
+### What are Vaults?
+
+Vaults are a way for liquidity providers to earn yield automatically on their USDC deposits. Instead of managing deposits manually, users can delegate their liquidity to a Vault that handles pricing, rebalancing, and order matching.
+
+### Key details
+
+- **Access**: https://peer.xyz/vaults (also visible in the top nav: BUY & SELL | DEPOSITS | LIQUIDITY | VAULTS | LEADERBOARD)
+- **How it works**: You deposit USDC into a Vault. The Vault places and manages orders on your behalf, adjusting spreads and accepting payments automatically.
+- **APR**: Varies by spread level. Based on the Liquidity page data:
+  - 0.10% spread → ~22.6% APR
+  - 0.59% spread → ~29.0% APR
+  - 1.00% spread → ~56.4% APR
+  - 1.50-2.00% spread → ~85-115% APR
+  - Higher spreads show even higher APR but may fill less often
+- **Vault deposits are marked with "V"** in the Liquidity page order book
+
+### When to recommend Vaults
+
+- User is a liquidity provider or wants to earn yield on USDC
+- User asks about passive income, staking, or yield on Peer
+- User asks "how do I become a seller/maker on Peer?"
+
+### What to tell users about Vaults
+
+- Vaults are in Beta — smart contract risk applies
+- APR is not guaranteed — it depends on trade volume and spread settings
+- Higher spread = higher APR per trade, but fewer trades may fill
+- Lower spread = more trades fill, but lower APR per trade
+- Check https://peer.xyz/vaults for current Vault options and APR
+
+### Liquidity Page Overview
+
+The Liquidity page at peer.xyz shows an order-book style view of all active deposits:
+
+| Column | Meaning |
+|--------|---------|
+| Price | Rate in fiat per 1 USDC (e.g., 1.0100 = you pay 1.01 USD per USDC) |
+| Spread | Premium over market rate in % |
+| Amount | USDC available at this price level |
+| Total | Cumulative USDC available up to this price |
+| APR | Estimated annual yield for providers at this spread |
+| Providers | Payment methods accepted (icons) + "V" if Vault-managed |
+
+This is useful for users who want to understand market depth before placing an order, or for LPs deciding what spread to set.
+
+---
+
+## SECTION 15: LIVE TRADE FEED (Telegram)
+
 
 ### Monitoring recent trades
 
@@ -709,7 +761,7 @@ This shows total active liquidity and number of active deposits — a good healt
 
 ---
 
-## SECTION 15: STAYING UPDATED
+## SECTION 16: STAYING UPDATED
 
 ### How to check for changes
 
