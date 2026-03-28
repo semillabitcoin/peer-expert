@@ -121,6 +121,27 @@ If the user wants Bitcoin or a non-USDC token, explain that Peer delivers USDC o
 
 When the user asks a general "what are rates like?" or "how's the market?", query all currencies for the top liquidity deposits and present a summary table.
 
+### Liquidity Order Book Query
+
+To replicate the Liquidity page at peer.xyz (spreads, amounts, payment methods per deposit), run this query:
+
+```bash
+curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits currencies { currencyCode takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
+```
+
+From this response you can build the full order book:
+- **Spread**: `spreadBps / 100` → percentage (note: `spreadBps` can be `null` for some entries — treat as unknown/variable spread)
+- **Amount**: `remainingDeposits / 1e6` → USDC available
+- **Payment methods**: decode `paymentMethodHash` using the reference file
+- **Currencies**: decode `currencyCode` using the reference file
+- **Price**: `takerConversionRate / 1e18` → fiat per 1 USDC
+
+Present as a table sorted by spread (lowest first) when the user asks about liquidity, available methods, or spreads.
+
+**Use this query instead of the static tables below** whenever the user asks about current payment methods, spreads, or liquidity. The tables in Section 2 are a fallback reference for risk levels and cap multipliers only — they do NOT reflect current availability.
+
 ---
 
 ## SECTION 2: PLATFORM KNOWLEDGE
@@ -134,6 +155,8 @@ Peer (peer.xyz, formerly ZKP2P) is a peer-to-peer fiat-to-crypto marketplace. It
 - **Protocol**: Smart contracts on Base hold USDC in escrow. Released when payment is ZK-verified
 
 ### Supported Payment Methods
+
+> **⚠️ STATIC REFERENCE — for risk levels and cap multipliers only.** To see which methods currently have liquidity and at what spreads, run the Liquidity Order Book Query from Section 1.
 
 | Platform | Currencies | Risk Level | Cap Multiplier | Notes |
 |----------|-----------|------------|----------------|-------|

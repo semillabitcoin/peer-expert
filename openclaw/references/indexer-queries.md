@@ -162,7 +162,41 @@ Replace `CURRENCY_HASH` with the hash from the table above.
 }
 ```
 
-### 4. Total platform liquidity
+### 4. Liquidity order book (replicates peer.xyz/liquidity)
+
+Returns all active deposits with their spreads, amounts, and payment methods — same data as the Liquidity page.
+
+```graphql
+{
+  Deposit(
+    limit: 50
+    where: {
+      acceptingIntents: { _eq: true }
+      status: { _eq: "ACTIVE" }
+      remainingDeposits: { _gt: "1000000" }
+    }
+    order_by: { remainingDeposits: desc }
+  ) {
+    depositId
+    remainingDeposits
+    currencies {
+      currencyCode
+      takerConversionRate
+      spreadBps
+      paymentMethodHash
+      rateSource
+    }
+  }
+}
+```
+
+Decoding notes:
+- `spreadBps` can be `null` — treat as unknown/variable spread
+- Each deposit may have multiple currencies × payment methods (one entry per combo)
+- Sort by `spreadBps` ascending to show cheapest first
+- Use this to answer questions about current spreads, active payment methods, and available liquidity
+
+### 5. Total platform liquidity
 
 Note: `Deposit_aggregate` is NOT available on this indexer. Sum deposits manually:
 
@@ -183,7 +217,7 @@ Note: `Deposit_aggregate` is NOT available on this indexer. Sum deposits manuall
 
 Sum all `remainingDeposits` values (divide each by 1e6) to get total liquidity. Count the array length for number of active deposits.
 
-### 5. Recent fulfilled intents (volume indicator)
+### 6. Recent fulfilled intents (volume indicator)
 
 Note: `Intent` has no `deposit` relation field. Use `depositId` (string) directly.
 
