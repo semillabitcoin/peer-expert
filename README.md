@@ -140,23 +140,66 @@ Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scrol
 
 ## Installation
 
-### OpenClaw (Umbrel)
+### OpenClaw
+
+OpenClaw is a self-hosted AI assistant that connects to your messaging apps. The peer-expert skill works with any OpenClaw installation — whether on Umbrel, a VPS, a Raspberry Pi, or your local machine.
+
+**Step 1 — Copy the skill files:**
 
 ```bash
-cp -r openclaw/ ~/.openclaw/skills/peer-expert/
+# Find your OpenClaw skills directory (common locations below)
+# Umbrel:      ~/umbrel/app-data/openclaw/skills/
+# Docker:      Check your docker-compose volume mount for /skills
+# Local:       ~/.openclaw/skills/
+# Custom:      Whatever path you set in OPENCLAW_SKILLS_DIR
+
+# Copy the skill
+cp -r openclaw/ <YOUR_SKILLS_DIR>/peer-expert/
 ```
 
-Start a new session. Ask anything about buying crypto or say `/peer_expert`.
+**Step 2 — Verify the structure:**
 
-Works from **WhatsApp, Telegram, Discord, Slack, Signal** — any channel connected to your OpenClaw.
+```
+<YOUR_SKILLS_DIR>/peer-expert/
+├── SKILL.md
+└── references/
+    └── indexer-queries.md
+```
+
+**Step 3 — Restart OpenClaw** (or start a new session).
+
+**Step 4 — Test it:**
+
+Send a message to your OpenClaw from any connected channel:
+> "What's the cheapest way to buy $100 of crypto right now?"
+
+The skill activates automatically when it detects questions about peer.xyz, buying crypto, or P2P onramping. You can also trigger it directly with `/peer_expert`.
+
+**Works from any channel connected to your OpenClaw:** WhatsApp, Telegram, Discord, Slack, Signal, etc.
+
+**Troubleshooting:**
+- Skill not activating? Make sure the `SKILL.md` file is in the root of the skill folder, not nested inside another directory.
+- OpenClaw needs internet access to query the Peer indexer (outbound HTTPS to `indexer.hyperindex.xyz`).
+- If you're behind a firewall or using Tor, make sure the indexer endpoint is reachable.
 
 ### Claude Code
 
+**Step 1 — Copy the skill files:**
+
 ```bash
-cp -r claude/ ~/.claude/skills/buy-on-peer/
+# Create the skills directory if it doesn't exist
+mkdir -p ~/.claude/skills/buy-on-peer/
+
+# Copy the skill
+cp -r claude/* ~/.claude/skills/buy-on-peer/
 ```
 
-Restart Claude Code. Say `/peer-expert` or ask about peer.xyz.
+**Step 2 — Restart Claude Code** (or start a new conversation).
+
+**Step 3 — Test it:**
+
+Say "buy-on-peer" or ask about peer.xyz. Example:
+> "What are the best rates to buy USDC with EUR right now?"
 
 ## How it works
 
