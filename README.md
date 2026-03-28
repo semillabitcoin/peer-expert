@@ -18,9 +18,11 @@ Peer is the fastest no-KYC crypto onramp — but choosing the right payment meth
 
 **That's $5 saved on a single $500 purchase.** It adds up.
 
+---
+
 ## What it can do
 
-### Find the best deal — in real time
+### 1. Find the best deal — in real time
 
 Ask in any language. The skill queries the Peer indexer live and compares every payment method:
 
@@ -32,7 +34,9 @@ Ask in any language. The skill queries the Peer indexer live and compares every 
 >
 > Wise te ahorra $3.20 en esta compra. Procedo?
 
-### Answer any question about Peer
+The skill breaks down **every fee**: spread (set by sellers) + 0.5% protocol fee + bridge fee (if you want tokens outside Base). No hidden costs.
+
+### 2. Answer any question about Peer
 
 > **You**: why is PayPal locked?
 >
@@ -42,7 +46,7 @@ Ask in any language. The skill queries the Peer indexer live and compares every 
 >
 > **Skill**: Yes. PeerAuth generates ZK proofs locally on your machine. Only the payment amount, recipient, and timestamp are shared — no bank details, no transaction history, no personal info. You can verify this yourself in Chrome DevTools Network tab.
 
-### Guide you step by step
+### 3. Guide you step by step
 
 From "I've never used Peer" to "crypto in my wallet" — one message at a time:
 
@@ -53,19 +57,86 @@ From "I've never used Peer" to "crypto in my wallet" — one message at a time:
 5. Explains PeerAuth verification
 6. Troubleshoots if anything goes wrong
 
-### Troubleshoot problems
+### 4. Troubleshoot problems
 
 > **You**: verification failed, what do I do?
 >
 > **Skill**: Don't panic — your money is in on-chain escrow. Try: 1) Click "Try again", wait 30s. 2) Check PeerAuth is active. 3) Refresh and retry. After 3 fails, contact the seller via Telegram with your order ID and payment screenshot. Do NOT cancel the payment.
 
+The skill knows every common issue: PeerAuth not connecting, wrong currency sent, cooldowns, order expiry, and how to recover from each one.
+
+### 5. Detect new payment methods and currencies automatically
+
+Peer adds new options regularly. The skill doesn't just rely on a static list — it queries the indexer and compares against known hashes. If a new payment method or currency appears, it flags it:
+
+> **Skill**: I found a payment method with hash `0xabc...` that isn't in my known list — Peer may have added a new option. The rate is 1.2% spread with $8,000 liquidity. Check docs.peer.xyz or the Peer Telegram to identify it.
+
+This means the skill stays useful even as Peer evolves without needing updates.
+
+### 6. Show a complete cost breakdown (worked example)
+
+The skill doesn't just say "1.5% fee". It walks through the full math so you know exactly what you're paying:
+
+> **You**: quiero comprar €200 en BTC con Revolut
+>
+> **Skill**:
+> - Rate: 0.952 EUR/USDC → €200 / 0.952 = ~210.08 USDC
+> - Protocol fee: -1.05 USDC (0.5%)
+> - USDC received: ~209.03 on Base
+> - After BTC swap: ~208.40 USDC worth of BTC (~0.3% swap)
+> - **Total fees: ~€4.60 (2.3%)**
+
+### 7. Handle errors gracefully
+
+If the Peer indexer is down or returns empty data, the skill:
+
+1. Retries once
+2. Falls back to the Quote API (`api.zkp2p.xyz`)
+3. If both fail, tells you honestly and sends you to peer.xyz directly
+
+It also filters out bad data: deposits with >20% spread (likely stale), zero rates, or <$10 liquidity are skipped automatically.
+
+### 8. Compare Peer with alternatives
+
+> **You**: should I use Peer or Robosats?
+>
+> **Skill**: Depends on what you need:
+> - **Peer** is better for: multiple tokens (ETH, USDC, any ERC-20), speed (2-5 min), automation (no chatting with sellers), and payment app variety (12 methods)
+> - **Robosats** is better for: Bitcoin on Lightning (~0.5% fees vs Peer's ~2%), maximum privacy (Tor), no browser extension needed
+>
+> For a $200 BTC purchase, Robosats saves you ~$3 in fees. But if you want ETH or USDC, Peer is your only no-KYC option with this many payment methods.
+
+The skill knows Robosats, Bisq, Hodl Hodl, and Peach — and gives honest recommendations, including when Peer isn't the best choice.
+
+### 9. Check live trading activity
+
+> **You**: is Peer active right now? Are people actually using it?
+>
+> **Skill**: Let me check... In the last hour: 12 trades completed, $4,200 total volume. Most active: Revolut (EUR) and Wise (GBP). Total platform liquidity: $127,000 across 45 deposits.
+
+The skill queries recent fulfilled intents from the indexer. You can also join the [Telegram trade feed](https://t.me/zk_p2p) where a bot posts every completed trade in real time.
+
+### 10. Help developers integrate Peer
+
+> **You**: I want to add a "buy crypto" button to my dApp
+>
+> **Skill**: Use the @zkp2p/sdk package. Install with `npm install @zkp2p/sdk`, then use the embedded widget or Quote API. Full docs at developer.peer.xyz.
+
+The skill knows the SDK basics, chain IDs, contract addresses, and API endpoints for developers building on top of Peer.
+
+---
+
 ## Supported currencies
 
-USD, EUR, GBP, CAD, AUD, CHF, MXN, ARS, NZD, SGD, JPY, INR, HKD, CNY, TRY, THB, SEK, NOK, DKK, PLN, HUF, PHP, MYR, AED, SAR, and more — **33 currencies** total.
+USD, EUR, GBP, CAD, AUD, CHF, MXN, ARS, NZD, SGD, JPY, INR, HKD, CNY, TRY, THB, SEK, NOK, DKK, PLN, HUF, PHP, MYR, AED, SAR, KES, UGX, VND, ZAR, IDR, ILS, CZK, RON — **33 currencies** total.
 
 ## Supported payment methods
 
 Revolut, Wise, Venmo, CashApp, PayPal, Monzo, Zelle (Citi/Chase/BofA), MercadoPago, N26, Alipay — **12 methods** across low/medium/high risk tiers.
+
+## Supported chains
+
+Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scroll, Avalanche, BNB, FlowEVM, and 20+ more.
 
 ## Installation
 
@@ -92,9 +163,12 @@ Restart Claude Code. Say `/peer-expert` or ask about peer.xyz.
 The skill connects to Peer's public GraphQL indexer (no API key needed) to fetch:
 - Live conversion rates and spreads for every currency/payment method pair
 - Available liquidity per deposit
-- Platform status
+- Recent completed trades (volume indicator)
+- Platform-wide stats (total liquidity, active deposits)
 
 It then calculates the **total cost** (spread + 0.5% protocol fee + bridge fee if needed) and ranks your options. All data is real-time — never cached, never guessed.
+
+If the indexer is unavailable, the skill falls back to the Quote API and tells you transparently if data is stale.
 
 ## Structure
 
@@ -102,7 +176,7 @@ It then calculates the **total cost** (spread + 0.5% protocol fee + bridge fee i
 peer-expert/
 ├── README.md
 ├── claude/
-│   ├── SKILL.md                      # Claude Code skill
+│   ├── SKILL.md                      # Claude Code skill (15 sections)
 │   └── references/
 │       └── indexer-queries.md        # GraphQL queries + hash mappings
 └── openclaw/
@@ -110,6 +184,16 @@ peer-expert/
     └── references/
         └── indexer-queries.md
 ```
+
+## Community
+
+- **App**: https://peer.xyz
+- **Docs**: https://docs.peer.xyz
+- **Trade feed (Telegram)**: https://t.me/zk_p2p
+- **Support (Telegram)**: https://t.me/+XDj9FNnW-xs5ODNl
+- **Twitter/X**: https://x.com/peerxyz
+- **GitHub**: https://github.com/zkp2p
+- **Developer portal**: https://developer.peer.xyz
 
 ## License
 

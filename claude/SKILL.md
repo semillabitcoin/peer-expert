@@ -57,6 +57,25 @@ Replace `CURRENCY_HASH` with the appropriate hash from the reference file.
 - **spreadBps**: Basis points. 100 = 1%, 350 = 3.5%
 - **Payment method hashes**: Map using the reference file (e.g., `0x617f88...` = Revolut)
 
+### Handling Unknown Hashes
+
+The hash mappings in the reference file may become outdated as Peer adds new payment methods or currencies. When you encounter a hash that doesn't match any known mapping:
+
+1. **Do NOT ignore it or label it "unknown".** It likely represents a newly added method or currency.
+2. **Flag it to the user**: "I found a payment method/currency with hash `0xabc...` that isn't in my known list — Peer may have added a new option."
+3. **Still show the data**: Display the rate, spread, and liquidity even if you can't name the method.
+4. **Suggest verification**: Point the user to https://docs.peer.xyz or the Peer Telegram for identification.
+
+To proactively detect new additions, run this discovery query periodically:
+
+```bash
+curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}) { currencies { currencyCode paymentMethodHash } } }"}'
+```
+
+Compare every `paymentMethodHash` and `currencyCode` in the response against the known hashes in `{baseDir}/references/indexer-queries.md`. Any hash not in the list is a new addition to the platform.
+
 ### Total Cost Calculation
 
 ```
@@ -425,7 +444,272 @@ A: I'll check live rates for you right now. [Query indexer and present results]
 
 ---
 
-## SECTION 9: STAYING UPDATED
+## SECTION 9: WORKED EXAMPLE
+
+This is a complete example of how to handle a user request end-to-end. Follow this pattern when guiding users.
+
+### Scenario: "Quiero comprar $200 en BTC con Revolut desde EUR"
+
+**Step 1 — Parse the request:**
+- Amount: €200
+- Payment method: Revolut
+- Currency: EUR
+- Destination: BTC
+- Chain: not specified → recommend Base (cheapest), then swap to BTC
+
+**Step 2 — Query live rates for EUR via Revolut:**
+
+```bash
+curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Deposit(limit: 20, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits currencies(where: {currencyCode: {_eq: \"0xfff16d60be267153303bbfa66e593fb8d06e24ea5ef24b6acca5224c2ca6b907\"}}) { takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
+```
+
+**Step 3 — Filter results for Revolut hash** (`0x617f88...`):
+
+Suppose the query returns a deposit with:
+- `takerConversionRate`: `952000000000000000` → 0.952 (means 0.952 EUR per 1 USDC)
+- `spreadBps`: `150` → 1.5%
+- `remainingDeposits`: `15000000000` → $15,000 available
+
+**Step 4 — Calculate total cost:**
+
+```
+Spread:        1.5%
+Protocol fee:  0.5%
+Bridge fee:    0% (staying on Base for USDC, swap to BTC adds ~0.3%)
+BTC swap fee:  ~0.3% (DEX slippage)
+─────────────────
+Total cost:    ~2.3%
+```
+
+**Step 5 — Calculate what the user gets:**
+
+```
+Sending:       €200
+Rate:          0.952 EUR/USDC → €200 / 0.952 = ~210.08 USDC
+Protocol fee:  -1.05 USDC (0.5%)
+USDC received: ~209.03 USDC on Base
+After BTC swap: ~208.40 USDC worth of BTC (~0.3% swap fee)
+Total fees:    ~€4.60 (~2.3% of €200)
+```
+
+**Step 6 — Present to user:**
+
+> Para comprar BTC con €200 via Revolut:
+>
+> - **Spread**: 1.5% · **Total cost**: ~2.3% (~€4.60)
+> - **Recibirías**: ~$208.40 en BTC en Base
+> - **Liquidez disponible**: $15,000
+>
+> ¿Quieres que te guíe paso a paso?
+
+**Important notes for this example:**
+- The rate 0.952 EUR/USDC means EUR is worth more than USD (you pay less EUR per USDC)
+- Always double-check: does the user want €200 worth or $200 worth? Ask if ambiguous
+- BTC swap adds a small fee — mention it upfront so there are no surprises
+- If the user wants BTC on Bitcoin mainnet (not wrapped), Peer doesn't support that directly — they'd need to bridge/swap after receiving USDC
+
+---
+
+## SECTION 10: ERROR HANDLING & FALLBACKS
+
+### Indexer Down or Empty Results
+
+If the GraphQL indexer returns an error, times out, or returns empty data:
+
+1. **Retry once** after 5 seconds — transient failures are common
+2. **Try the Quote API** as fallback:
+
+```bash
+curl -sL -X POST "https://api.zkp2p.xyz/v2/quote/exact-fiat" \
+  -H "Content-Type: application/json" \
+  -d '{"paymentPlatforms": ["revolut", "wise"], "fiatCurrency": "USD", "exactFiatAmount": "100", "user": "0x0000000000000000000000000000000000000000", "recipient": "0x0000000000000000000000000000000000000000", "destinationChainId": 8453, "destinationToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"}'
+```
+
+Note: The Quote API may reject zero addresses. Use it for rough estimates only.
+
+3. **If both fail**, tell the user:
+   - "The Peer indexer is currently unavailable. You can check rates directly at https://peer.xyz"
+   - "Try again in a few minutes — the indexer usually recovers quickly"
+   - Do NOT guess or use cached rates — always be transparent about data freshness
+
+### Empty Results for a Currency
+
+If a query returns deposits but no matching currencies:
+- The currency may have no active liquidity right now
+- Try broadening: remove the `currencyCode` filter and check what currencies ARE available
+- Suggest alternative currencies or payment methods with active liquidity
+
+### Rate Sanity Check
+
+Before presenting rates to the user, verify they make sense:
+- Spread > 20% is suspicious — likely stale or misconfigured deposit
+- Rate of 0 or negative — skip this deposit
+- Liquidity < $10 — not worth recommending, filter out
+
+---
+
+## SECTION 11: COMPARISON WITH ALTERNATIVES
+
+When users ask "why Peer?" or "is there something better?", use this comparison:
+
+| Feature | Peer | Robosats | Bisq | Hodl Hodl | Peach |
+|---------|------|----------|------|-----------|-------|
+| **KYC** | None | None | None | None | None |
+| **Currencies** | 33 fiat | BTC/LN only | Many | BTC only | EUR focus |
+| **Payment methods** | 12+ apps | LN + any | Bank, Revolut, etc. | Negotiated | SEPA, Revolut, etc. |
+| **Speed** | 2-5 min | ~10 min | 1-2 hours | Variable | Variable |
+| **Verification** | ZK proofs (automatic) | Manual confirm | Manual confirm | Manual confirm | Manual confirm |
+| **Escrow** | Smart contract (Base) | LN hodl invoice | Multisig BTC | Multisig BTC | Multisig BTC |
+| **Token output** | USDC → any token/chain | BTC (Lightning) | BTC | BTC | BTC |
+| **Dispute resolution** | Automatic (ZK proof) | Mediator | Arbitrator | Arbitrator | Mediator |
+| **Fees** | ~1-5% total | ~0.5-1% | 0.1% maker/1% taker | 0.6% | 2% |
+| **Min trade** | ~$1 | ~$1 (sats) | 0.001 BTC | 0.001 BTC | €5 |
+| **Requires** | Chrome + PeerAuth | Tor browser | Desktop app | Browser | Mobile app |
+
+### When to recommend Peer over alternatives
+
+- User wants **any token** (not just BTC) — Peer is the only option with multi-token output
+- User wants **speed** — ZK verification is faster than manual confirmation
+- User wants **automation** — no back-and-forth chat with seller
+- User has a **specific payment app** (Revolut, Wise, Venmo, etc.) — Peer has direct integration
+
+### When alternatives might be better
+
+- User wants **Bitcoin on Lightning** → Robosats (native LN, lower fees)
+- User wants **maximum privacy** → Robosats over Tor (no browser extension needed)
+- User wants **large BTC amounts** with multisig → Bisq or Hodl Hodl
+- User is **EUR-only and mobile-first** → Peach (dedicated mobile app)
+- User wants **lowest possible fees** → Robosats on Lightning (~0.5%)
+
+### Honest assessment
+
+Peer's advantage is convenience and multi-token support. Its disadvantage is that it only delivers USDC first (then bridges/swaps), which adds fees for non-USDC destinations. For pure BTC purchases, Lightning-based alternatives (Robosats) are often cheaper.
+
+---
+
+## SECTION 12: SDK & DEVELOPER INTEGRATION
+
+### @zkp2p/sdk
+
+Peer offers a TypeScript SDK for integrating P2P onramping into dApps:
+
+```bash
+npm install @zkp2p/sdk
+```
+
+**Developer portal**: https://developer.peer.xyz
+
+### Key SDK capabilities
+
+- **Embedded widget**: Add a "Buy crypto" button to any dApp
+- **Quote API**: Get best rates programmatically
+- **Intent creation**: Create buy orders on behalf of users
+- **Webhook notifications**: Get notified when orders complete
+
+### Basic integration pattern
+
+```typescript
+import { PeerSDK } from '@zkp2p/sdk';
+
+const peer = new PeerSDK({
+  chainId: 8453, // Base
+});
+
+// Get a quote
+const quote = await peer.getQuote({
+  fiatCurrency: 'USD',
+  fiatAmount: '100',
+  paymentPlatform: 'revolut',
+  destinationToken: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC on Base
+});
+```
+
+**Note**: The SDK API may change. Always check https://developer.peer.xyz for the latest docs. The code above is illustrative — verify actual method names and parameters before recommending to developers.
+
+### When users ask about the SDK
+
+- Point them to the developer portal first
+- The SDK is best for dApp developers who want to embed Peer as an onramp
+- For personal use, the web app at peer.xyz is simpler
+
+---
+
+## SECTION 13: REFERRALS, REWARDS & MOBILE
+
+### Referral Program
+
+Peer has had referral campaigns at various points. The current status may change:
+- Check https://peer.xyz for any active referral links or banners
+- Check the Peer Twitter/X (@peerxyz) for announcements
+- Some campaigns offered points/rewards for completed orders
+- If the user asks about referrals and you're unsure, direct them to the Peer Telegram or Discord
+
+### Points & Rewards
+
+Peer has run point-based reward systems (similar to airdrop farming):
+- Points earned per completed order
+- Higher tiers may earn more points
+- Points programs can start/stop — check peer.xyz for current status
+- Do NOT promise specific rewards or token airdrops — this is speculative
+
+### Mobile App
+
+- Peer has announced mobile app development (Peer Platinum members got early access)
+- Current status: check the App Store / Play Store for "Peer" or "ZKP2P"
+- The web app (peer.xyz) works on mobile browsers but the PeerAuth extension requires Chrome desktop
+- If a user asks about mobile: "The Peer web app works on mobile, but verification currently requires the PeerAuth Chrome extension on desktop. Check peer.xyz or their Twitter for mobile app updates."
+
+---
+
+## SECTION 14: LIVE TRADE FEED (Telegram)
+
+### Monitoring recent trades
+
+The Peer community Telegram group https://t.me/zk_p2p has a bot that posts completed trades in real time. This is useful for:
+- Seeing what payment methods and currencies people are actively using
+- Gauging current volume and activity
+- Identifying popular trading pairs
+
+### How to use the trade feed
+
+When the user asks about recent activity, volume, or "what are people buying with?":
+
+1. **Query the indexer for recent fulfilled intents** (programmatic, most reliable):
+
+```bash
+curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Intent(limit: 20, where: {status: {_eq: \"FULFILLED\"}}, order_by: {updatedAt: desc}) { amount updatedAt deposit { depositId } } }"}'
+```
+
+This returns the latest 20 completed trades with amounts and timestamps.
+
+2. **Point them to the Telegram group** for the live feed:
+   - Group: https://t.me/zk_p2p
+   - The bot posts each completed trade with amount and payment method
+   - Useful for social proof and seeing the platform is active
+
+3. **Query total platform stats**:
+
+```bash
+curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Deposit_aggregate(where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}}) { aggregate { sum { remainingDeposits } count } } }"}'
+```
+
+This shows total active liquidity and number of active deposits — a good health indicator.
+
+### Interpreting trade activity
+
+- **High volume + many methods**: Platform is healthy, rates are competitive
+- **Low volume**: Rates may be less competitive or liquidity is thin — check spreads
+- **Concentration in one method**: That's likely the best rate right now
+
+---
+
+## SECTION 15: STAYING UPDATED
 
 ### How to check for changes
 
@@ -455,6 +739,7 @@ When in doubt, query the indexer — it's always the source of truth for current
 - **Docs**: https://docs.peer.xyz
 - **PeerAuth Extension**: Chrome Web Store → "PeerAuth"
 - **Support Telegram**: https://t.me/+XDj9FNnW-xs5ODNl
+- **Community & Trade Feed**: https://t.me/zk_p2p
 - **Twitter/X**: https://x.com/peerxyz
 - **GitHub**: https://github.com/zkp2p
 - **SDK**: `npm install @zkp2p/sdk`
