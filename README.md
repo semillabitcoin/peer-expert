@@ -96,19 +96,7 @@ If the Peer indexer is down or returns empty data, the skill:
 
 It also filters out bad data: deposits with >20% spread (likely stale), zero rates, or <$10 liquidity are skipped automatically.
 
-### 8. Compare Peer with alternatives
-
-> **You**: should I use Peer or Robosats?
->
-> **Skill**: Depends on what you need:
-> - **Peer** is better for: multiple tokens (ETH, USDC, any ERC-20), speed (2-5 min), automation (no chatting with sellers), and payment app variety (12 methods)
-> - **Robosats** is better for: Bitcoin on Lightning (~0.5% fees vs Peer's ~2%), maximum privacy (Tor), no browser extension needed
->
-> For a $200 BTC purchase, Robosats saves you ~$3 in fees. But if you want ETH or USDC, Peer is your only no-KYC option with this many payment methods.
-
-The skill knows Robosats, Bisq, Hodl Hodl, and Peach — and gives honest recommendations, including when Peer isn't the best choice.
-
-### 9. Check live trading activity
+### 8. Check live trading activity
 
 > **You**: is Peer active right now? Are people actually using it?
 >
@@ -116,7 +104,7 @@ The skill knows Robosats, Bisq, Hodl Hodl, and Peach — and gives honest recomm
 
 The skill queries recent fulfilled intents from the indexer. You can also join the [Telegram trade feed](https://t.me/zk_p2p) where a bot posts every completed trade in real time.
 
-### 10. Help developers integrate Peer
+### 9. Help developers integrate Peer
 
 > **You**: I want to add a "buy crypto" button to my dApp
 >
@@ -219,7 +207,7 @@ If the indexer is unavailable, the skill falls back to the Quote API and tells y
 peer-expert/
 ├── README.md
 ├── claude/
-│   ├── SKILL.md                      # Claude Code skill (15 sections)
+│   ├── SKILL.md                      # Claude Code skill
 │   └── references/
 │       └── indexer-queries.md        # GraphQL queries + hash mappings
 └── openclaw/

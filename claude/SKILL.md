@@ -552,46 +552,7 @@ Before presenting rates to the user, verify they make sense:
 
 ---
 
-## SECTION 11: COMPARISON WITH ALTERNATIVES
-
-When users ask "why Peer?" or "is there something better?", use this comparison:
-
-| Feature | Peer | Robosats | Bisq | Hodl Hodl | Peach |
-|---------|------|----------|------|-----------|-------|
-| **KYC** | None | None | None | None | None |
-| **Currencies** | 33 fiat | BTC/LN only | Many | BTC only | EUR focus |
-| **Payment methods** | 12+ apps | LN + any | Bank, Revolut, etc. | Negotiated | SEPA, Revolut, etc. |
-| **Speed** | 2-5 min | ~10 min | 1-2 hours | Variable | Variable |
-| **Verification** | ZK proofs (automatic) | Manual confirm | Manual confirm | Manual confirm | Manual confirm |
-| **Escrow** | Smart contract (Base) | LN hodl invoice | Multisig BTC | Multisig BTC | Multisig BTC |
-| **Token output** | USDC → any token/chain | BTC (Lightning) | BTC | BTC | BTC |
-| **Dispute resolution** | Automatic (ZK proof) | Mediator | Arbitrator | Arbitrator | Mediator |
-| **Fees** | ~1-5% total | ~0.5-1% | 0.1% maker/1% taker | 0.6% | 2% |
-| **Min trade** | ~$1 | ~$1 (sats) | 0.001 BTC | 0.001 BTC | €5 |
-| **Requires** | Chrome + PeerAuth | Tor browser | Desktop app | Browser | Mobile app |
-
-### When to recommend Peer over alternatives
-
-- User wants **any token** (not just BTC) — Peer is the only option with multi-token output
-- User wants **speed** — ZK verification is faster than manual confirmation
-- User wants **automation** — no back-and-forth chat with seller
-- User has a **specific payment app** (Revolut, Wise, Venmo, etc.) — Peer has direct integration
-
-### When alternatives might be better
-
-- User wants **Bitcoin on Lightning** → Robosats (native LN, lower fees)
-- User wants **maximum privacy** → Robosats over Tor (no browser extension needed)
-- User wants **large BTC amounts** with multisig → Bisq or Hodl Hodl
-- User is **EUR-only and mobile-first** → Peach (dedicated mobile app)
-- User wants **lowest possible fees** → Robosats on Lightning (~0.5%)
-
-### Honest assessment
-
-Peer's advantage is convenience and multi-token support. Its disadvantage is that it only delivers USDC first (then bridges/swaps), which adds fees for non-USDC destinations. For pure BTC purchases, Lightning-based alternatives (Robosats) are often cheaper.
-
----
-
-## SECTION 12: SDK & DEVELOPER INTEGRATION
+## SECTION 11: SDK & DEVELOPER INTEGRATION
 
 ### @zkp2p/sdk
 
@@ -638,7 +599,7 @@ const quote = await peer.getQuote({
 
 ---
 
-## SECTION 13: REFERRALS, REWARDS & MOBILE
+## SECTION 12: REFERRALS, REWARDS & MOBILE
 
 ### Referral Program
 
@@ -665,7 +626,7 @@ Peer has run point-based reward systems (similar to airdrop farming):
 
 ---
 
-## SECTION 14: VAULTS (Yield for Liquidity Providers)
+## SECTION 13: VAULTS (Yield for Liquidity Providers)
 
 ### What are Vaults?
 
@@ -714,7 +675,7 @@ This is useful for users who want to understand market depth before placing an o
 
 ---
 
-## SECTION 15: LIVE TRADE FEED (Telegram)
+## SECTION 14: LIVE TRADE FEED (Telegram)
 
 
 ### Monitoring recent trades
@@ -761,7 +722,7 @@ This shows total active liquidity and number of active deposits — a good healt
 
 ---
 
-## SECTION 16: STAYING UPDATED
+## SECTION 15: STAYING UPDATED
 
 ### How to check for changes
 
