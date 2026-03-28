@@ -128,15 +128,25 @@ To replicate the Liquidity page at peer.xyz (spreads, amounts, payment methods p
 ```bash
 curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits currencies { currencyCode takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
+  -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits intentAmountMin intentAmountMax currencies { currencyCode takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
 ```
 
 From this response you can build the full order book:
 - **Spread**: `spreadBps / 100` → percentage. This is the exact value the maker configured (1 bps = 0.01% resolution). `spreadBps` can be `null` for some entries — treat as unknown/variable spread
 - **Amount**: `remainingDeposits / 1e6` → USDC available
+- **Order range**: `intentAmountMin / 1e6` to `intentAmountMax / 1e6` → min/max USDC per order
 - **Payment methods**: decode `paymentMethodHash` using the reference file
 - **Currencies**: decode `currencyCode` using the reference file
 - **Price**: `takerConversionRate / 1e18` → fiat per 1 USDC
+
+### Multi-escrow deposits
+
+A single `depositId` can appear **multiple times** in results, each with different `remainingDeposits`, `intentAmountMin/Max`, and `currencies`. This happens because one maker can have multiple escrow positions (sub-deposits) under the same ID, each configured with different payment methods, amount ranges, and spreads.
+
+When presenting results:
+- Group by `depositId` but show each sub-deposit as a separate row if they have different methods/ranges
+- Show the `intentAmountMin`–`intentAmountMax` range so the user knows the order size limits per position
+- The web at peer.xyz shows this as different payment methods with specific max amounts per method
 - **Rate source** (`rateSource`): how the rate is determined — affects reliability and freshness:
 
 | rateSource | Meaning | Implication for the user |
