@@ -132,13 +132,25 @@ curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
 ```
 
 From this response you can build the full order book:
-- **Spread**: `spreadBps / 100` → percentage (note: `spreadBps` can be `null` for some entries — treat as unknown/variable spread)
+- **Spread**: `spreadBps / 100` → percentage. This is the exact value the maker configured (1 bps = 0.01% resolution). `spreadBps` can be `null` for some entries — treat as unknown/variable spread
 - **Amount**: `remainingDeposits / 1e6` → USDC available
 - **Payment methods**: decode `paymentMethodHash` using the reference file
 - **Currencies**: decode `currencyCode` using the reference file
 - **Price**: `takerConversionRate / 1e18` → fiat per 1 USDC
+- **Rate source** (`rateSource`): how the rate is determined — affects reliability and freshness:
 
-Present as a table sorted by spread (lowest first) when the user asks about liquidity, available methods, or spreads.
+| rateSource | Meaning | Implication for the user |
+|-----------|---------|------------------------|
+| `ORACLE` | Rate auto-updates from market oracle + maker's spread | Most reliable — rate tracks the market in real time |
+| `MANAGER` | Rate managed by a vault or automated strategy | Reliable — actively managed, may adjust dynamically |
+| `ESCROW_FLOOR` | Fixed rate set manually by the maker | May be stale — maker must update manually. Check if rate looks reasonable vs oracle deposits |
+| `NO_FLOOR` | No minimum rate set | Usually has `spreadBps: null` and `takerConversionRate: 0` — skip these entries |
+
+When presenting results:
+- Sort by spread (lowest first)
+- Skip entries with `rateSource: NO_FLOOR` or `takerConversionRate: 0`
+- Show the rate source as context (e.g., "🔄 oracle" or "📌 fixed") so the user knows if the rate is tracking the market or static
+- Flag `ESCROW_FLOOR` deposits with spreads that look unusually high or low compared to `ORACLE` deposits — the maker may have forgotten to update
 
 **Use this query instead of the static tables below** whenever the user asks about current payment methods, spreads, or liquidity. The tables in Section 2 are a fallback reference for risk levels and cap multipliers only — they do NOT reflect current availability.
 

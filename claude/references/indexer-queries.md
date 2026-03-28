@@ -191,10 +191,16 @@ Returns all active deposits with their spreads, amounts, and payment methods —
 ```
 
 Decoding notes:
-- `spreadBps` can be `null` — treat as unknown/variable spread
+- `spreadBps` is an integer (basis points) — this is the exact value the maker configured. 1 bps = 0.01% resolution. Can be `null` for `NO_FLOOR` entries
+- `rateSource` values:
+  - `ORACLE` — rate auto-updates from market oracle + spread. Most reliable
+  - `MANAGER` — vault/strategy managed. Reliable, may adjust dynamically
+  - `ESCROW_FLOOR` — fixed rate set manually by maker. May be stale
+  - `NO_FLOOR` — no minimum rate. Usually has null spread and zero rate — skip these
 - Each deposit may have multiple currencies × payment methods (one entry per combo)
 - Sort by `spreadBps` ascending to show cheapest first
-- Use this to answer questions about current spreads, active payment methods, and available liquidity
+- Skip entries with `rateSource: NO_FLOOR` or `takerConversionRate: 0`
+- Flag `ESCROW_FLOOR` deposits whose spread looks off vs `ORACLE` deposits — maker may have forgotten to update
 
 ### 5. Total platform liquidity
 
