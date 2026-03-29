@@ -72,6 +72,23 @@ Before presenting rates to the user, verify they make sense:
 
 ---
 
+## LIQUIDITY PAGE OVERVIEW (peer.xyz/liquidity)
+
+The Liquidity page shows an order-book style view of all active deposits:
+
+| Column | Meaning |
+|--------|---------|
+| Price | Rate in fiat per 1 USDC (e.g., 1.0100 = you pay 1.01 USD per USDC) |
+| Spread | Premium over market rate in % |
+| Amount | USDC available at this price level |
+| Total | Cumulative USDC available up to this price |
+| APR | Estimated annual yield for providers at this spread |
+| Providers | Payment methods accepted (icons) + "V" if Vault-managed |
+
+Useful for buyers to understand market depth before placing an order, and for LPs deciding what spread to set.
+
+---
+
 ## PRIVACY & SECURITY
 
 ### What Data is Exposed?

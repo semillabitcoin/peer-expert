@@ -319,3 +319,43 @@ Note: The Quote API may require a valid taker address. For general rate comparis
 ```
 
 Chain IDs are in `bridge-fees.md`.
+
+## 7. Discovery query (detect new hashes)
+
+Peer may add new payment methods or currencies at any time. Run this query to detect hashes not in SKILL.md:
+
+```graphql
+{
+  Deposit(
+    limit: 50
+    where: {
+      acceptingIntents: { _eq: true }
+      status: { _eq: "ACTIVE" }
+      remainingDeposits: { _gt: "1000000" }
+    }
+  ) {
+    currencies {
+      currencyCode
+      paymentMethodHash
+    }
+  }
+}
+```
+
+Compare every `paymentMethodHash` and `currencyCode` in the response against the known hashes in SKILL.md. Any hash not in the list is a new addition to the platform — flag it to the user and still show its rate/liquidity data.
+
+## Staying Updated
+
+The data in this skill (payment methods, currencies, chains, tiers, fees) is a snapshot and WILL lag behind the live platform. When accuracy matters:
+
+1. **Rates and liquidity**: ALWAYS query the indexer live — never rely on examples
+2. **Payment methods and currencies**: Run the discovery query (above) to detect new hashes
+3. **Chains**: Check https://peer.xyz for the latest supported chains
+4. **Tiers/fees**: Check https://docs.peer.xyz/guides/for-buyers/reputation for current tier rules
+5. **SDK**: Check https://docs.peer.xyz/developer/sdk — method names change between versions
+
+If the user reports something that doesn't match this skill's knowledge:
+- Check https://docs.peer.xyz for updated guides
+- Query the indexer to verify current state
+- Check https://github.com/zkp2p for protocol updates
+- The Peer team announces changes on https://x.com/peerxyz and Telegram https://t.me/+XDj9FNnW-xs5ODNl
