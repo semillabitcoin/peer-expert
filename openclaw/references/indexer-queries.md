@@ -187,6 +187,8 @@ Returns all active deposits with their spreads, amounts, and payment methods —
   ) {
     depositId
     remainingDeposits
+    intentAmountMin
+    intentAmountMax
     currencies {
       currencyCode
       takerConversionRate

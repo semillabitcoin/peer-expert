@@ -842,6 +842,80 @@ Total fees:    ~€4.60 (~2.3% of €200)
 - BTC swap adds a small fee — mention it upfront so there are no surprises
 - For BTC on Bitcoin mainnet: Peer handles it automatically via Relay.link — the user selects Bitcoin as destination chain and provides a `bc1...` address. Query the Relay API (Section 1) for exact fees. See Section 8 for full details
 
+### Scenario B: "Quiero comprar USDC con $500 usando Zelle"
+
+> ⚠️ FICTIONAL NUMBERS — always query live data.
+
+**Parse:** $500 USD, Zelle, USDC on Base (no bridge needed).
+
+**Key differences from EUR example:**
+- USD rate is close to 1:1 (e.g., `takerConversionRate`: `1015000000000000000` → 1.015 USD/USDC)
+- Zelle is medium-risk (1.5x cap multiplier) — check user's tier can handle $500
+- Cooldown applies for Peasant/Peer tiers on Zelle
+- Zelle has 3 variants (Citi/Chase/BofA) — filter by the correct hash
+
+**Cost breakdown:**
+```
+Sending:       $500
+Rate:          1.015 USD/USDC → $500 / 1.015 = ~492.61 USDC
+Protocol fee:  -2.46 USDC (0.5%)
+USDC received: ~490.15 USDC on Base
+Total fees:    ~$9.85 (~1.97%)
+```
+
+**Tier check:** $500 via Zelle requires at least Peer tier ($375 cap at 1.5x) — actually need Peer Plus ($1,500 cap at 1.5x). Alert the user if they're below that tier.
+
+### Scenario C: "Quiero comprar crypto con 50,000 ARS usando MercadoPago"
+
+> ⚠️ FICTIONAL NUMBERS — always query live data.
+
+**Parse:** 50,000 ARS, MercadoPago, destination not specified → ask user.
+
+**Key differences from EUR/USD examples:**
+- ARS is highly volatile — rate changes fast (e.g., `takerConversionRate`: `1250000000000000000000` → 1,250 ARS/USDC)
+- MercadoPago is low-risk (5x cap multiplier) — generous limits
+- Spreads tend to be higher for ARS (2-5% typical)
+- The user gets relatively few USDC for many ARS — present in both currencies for clarity
+
+**Cost breakdown:**
+```
+Sending:       50,000 ARS
+Rate:          1,250 ARS/USDC → 50,000 / 1,250 = ~40.00 USDC
+Protocol fee:  -0.20 USDC (0.5%)
+USDC received: ~39.80 USDC on Base
+Spread:        ~3% → total fees ~3.5% → ~1,750 ARS
+```
+
+**Important ARS notes:**
+- Always present the USDC equivalent so the user understands the dollar value
+- ARS rates can have 18+ digits raw — be careful with decimal conversion
+- MercadoPago requires CVU as payee detail, not email/username
+- No cooldown on MercadoPago (low-risk platform)
+
+### Scenario D: "I want to buy ETH with £300 using Monzo"
+
+> ⚠️ FICTIONAL NUMBERS — always query live data.
+
+**Parse:** £300 GBP, Monzo, ETH (needs chain — ask: Ethereum mainnet or Base?).
+
+**Key differences:**
+- GBP is worth more than USD — rate < 1 (e.g., 0.79 GBP/USDC)
+- Monzo is GBP-only, low-risk (5x cap)
+- ETH requires bridge fee — **must query Relay API** for exact cost
+- Need to specify destination chain for ETH (Ethereum mainnet, Arbitrum, Base)
+
+**Cost breakdown (ETH on Ethereum mainnet):**
+```
+Sending:       £300
+Rate:          0.79 GBP/USDC → £300 / 0.79 = ~379.75 USDC
+Protocol fee:  -1.90 USDC (0.5%)
+Bridge fee:    -1.52 USDC (0.4% via Relay to Ethereum)
+USDC after:    ~376.33 → swapped to ETH at market rate
+Total fees:    ~£7.20 (~2.4%)
+```
+
+**Always run the Relay quote** for non-Base destinations — don't estimate bridge fees.
+
 ---
 
 ## SECTION 11: ERROR HANDLING & FALLBACKS
