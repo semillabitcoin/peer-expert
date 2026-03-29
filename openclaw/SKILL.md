@@ -621,7 +621,7 @@ Total fees:    ~€4.60 (~2.3% of €200)
 - The rate 0.952 EUR/USDC means EUR is worth more than USD (you pay less EUR per USDC)
 - Always double-check: does the user want €200 worth or $200 worth? Ask if ambiguous
 - BTC swap adds a small fee — mention it upfront so there are no surprises
-- If the user wants BTC on Bitcoin mainnet (not wrapped), Peer doesn't support that directly — they'd need to bridge/swap after receiving USDC
+- For BTC on Bitcoin mainnet: Peer handles it automatically via Relay.link — the user selects Bitcoin as destination chain and provides a `bc1...` address. Query the Relay API (Section 1) for exact fees. See Section 7 for full details
 
 ---
 
