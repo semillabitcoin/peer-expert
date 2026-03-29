@@ -232,11 +232,15 @@ Peer has an on-chain reputation system that determines order limits and cooldown
 
 ### Effective Caps (Base Cap × Platform Multiplier)
 
-Example for Peer tier ($250 base):
-- Revolut/Wise/Monzo/MercadoPago: $1,250 (5x, no cooldown)
-- Zelle: $375 (1.5x, 6h cooldown)
-- Venmo/CashApp: $250 (1x, 6h cooldown)
-- PayPal: Locked (requires Peer Plus)
+| Tier | Revolut/Wise/Monzo/MercadoPago (5x) | Zelle (1.5x) | Venmo/CashApp (1x) | PayPal (0.75x) |
+|------|--------------------------------------|--------------|---------------------|----------------|
+| Peasant ($100 base) | **$500** | $150 | $100 | Locked |
+| Peer ($250 base) | **$1,250** | $375 | $250 | Locked |
+| Peer Plus ($1,000 base) | **$5,000** | $1,500 | $1,000 | $750 |
+| Peer Pro ($2,500 base) | **$12,500** | $3,750 | $2,500 | $1,875 |
+| Peer Platinum ($5,000 base) | **$25,000** | $7,500 | $5,000 | $3,750 |
+
+Volume is measured as **Total Fulfilled Volume** — the cumulative USD value of all orders successfully completed. This is calculated onchain.
 
 ### Cooldown Rules
 
