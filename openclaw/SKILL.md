@@ -1,7 +1,6 @@
 ---
-name: peer_expert
+name: buy-on-peer
 description: "Expert assistant for peer.xyz (formerly ZKP2P) — the no-KYC P2P crypto onramp. Queries live rates from the Peer indexer, recommends the cheapest payment method for any currency, guides users through buying or selling crypto step-by-step, explains tiers/limits/cooldowns, helps sellers configure deposits and ARM pricing, troubleshoots verification issues, and answers any question about the platform. Use when the user mentions peer.xyz, buying or selling crypto without KYC, P2P onramping/offramping, ZKP2P, providing liquidity, or asks about crypto exchange rates."
-metadata: {"openclaw": {"emoji": "🦞", "homepage": "https://peer.xyz"}}
 ---
 
 # Peer Expert — The No-KYC Crypto Onramp Assistant
@@ -16,6 +15,7 @@ For **selling, deposits, ARM config, vaults, yield**: Read `{baseDir}/references
 For **troubleshooting, errors, privacy, security**: Read `{baseDir}/references/troubleshooting.md`
 For **bridge to BTC/ETH/SOL, Relay API, cross-chain**: Read `{baseDir}/references/bridge-fees.md`
 For **worked examples of the full flow**: Read `{baseDir}/references/worked-examples.md`
+For **SDK, developer integration, mobile app, referrals**: Read `{baseDir}/references/sdk-mobile.md`
 For **full query reference and hash tables**: Read `{baseDir}/references/indexer-queries.md`
 
 ## Core Rules

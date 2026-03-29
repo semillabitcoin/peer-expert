@@ -1,5 +1,26 @@
 # Buying Guide — Step-by-Step + Tiers + Decision Helper
 
+## PAYMENT METHOD RISK LEVELS
+
+> **Static reference** — for risk levels and cap multipliers only. To see which methods currently have liquidity and at what spreads, query the indexer.
+
+| Platform | Currencies | Risk Level | Cap Multiplier | Notes |
+|----------|-----------|------------|----------------|-------|
+| Revolut | Multi (EUR, GBP, USD, etc.) | Low | 5x | Best for non-USD. No chargebacks |
+| Wise | Multi (EUR, GBP, USD, etc.) | Low | 5x | Good international coverage |
+| Monzo | GBP only | Low | 5x | UK only |
+| MercadoPago | ARS only | Low | 5x | Argentina/LATAM |
+| Zelle | USD only (Citi, Chase, BofA) | Medium | 1.5x | US bank-to-bank |
+| Venmo | USD only | High | 1x | ACH-backed, 90-day reversal window |
+| CashApp | USD only | High | 1x | ACH-backed, 90-day reversal window |
+| PayPal | Multi | Highest | 0.75x | 180-day buyer protection. Requires Peer Plus tier |
+| Chime | USD only | Medium | -- | US neobank. Liquidity varies |
+| Luxon | Multi | -- | -- | Newer addition. Check indexer for current liquidity |
+| N26 | EUR | -- | -- | European neobank |
+| Alipay | CNY | -- | -- | Chinese market |
+
+---
+
 ## TAKER TIERS (Reputation System)
 
 Peer has an on-chain reputation system that determines order limits and cooldowns.

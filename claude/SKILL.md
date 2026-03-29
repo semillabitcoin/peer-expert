@@ -15,6 +15,7 @@ For **selling, deposits, ARM config, vaults, yield**: Read `{baseDir}/references
 For **troubleshooting, errors, privacy, security**: Read `{baseDir}/references/troubleshooting.md`
 For **bridge to BTC/ETH/SOL, Relay API, cross-chain**: Read `{baseDir}/references/bridge-fees.md`
 For **worked examples of the full flow**: Read `{baseDir}/references/worked-examples.md`
+For **SDK, developer integration, mobile app, referrals**: Read `{baseDir}/references/sdk-mobile.md`
 For **full query reference and hash tables**: Read `{baseDir}/references/indexer-queries.md`
 
 ## Core Rules
