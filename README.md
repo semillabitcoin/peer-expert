@@ -130,14 +130,6 @@ Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scrol
 
 ### OpenClaw
 
-**Option A — From ClawHub** (if published):
-
-```bash
-openclaw skills install peer-expert
-```
-
-**Option B — Manual install:**
-
 ```bash
 git clone https://github.com/semillabitcoin/peer-expert.git /tmp/peer-expert && \
 mkdir -p ~/.openclaw/skills/peer-expert/ && \
