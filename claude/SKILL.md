@@ -91,13 +91,56 @@ Compare every `paymentMethodHash` and `currencyCode` in the response against the
 ### Total Cost Calculation
 
 ```
-Total cost % = spread + protocol fee (0.5%) + bridge fee (if applicable)
+Total cost % = spread + protocol fee (0.5%) + bridge/swap fee (if applicable)
 ```
 
-Bridge fees (approximate, for non-Base destinations):
-- Solana, Ethereum, Arbitrum: ~0.1-0.5%
-- Hyperliquid: ~0.1-0.3%
-- Base: 0% (native, no bridge needed)
+**For USDC on Base**: No bridge fee. Total = spread + 0.5%.
+
+**For any other chain or token (including BTC nativo)**: Query the Relay API for exact fees:
+
+```bash
+curl -sL -X POST "https://api.relay.link/quote/v2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user": "USER_EVM_ADDRESS",
+    "originChainId": 8453,
+    "originCurrency": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "destinationChainId": DEST_CHAIN_ID,
+    "destinationCurrency": "DEST_TOKEN_ADDRESS",
+    "recipient": "RECIPIENT_ADDRESS",
+    "tradeType": "EXACT_INPUT",
+    "amount": "AMOUNT_IN_USDC_BASE_UNITS"
+  }'
+```
+
+Key parameters:
+- `amount`: USDC in 6 decimals (e.g., `500000000` = 500 USDC)
+- `originChainId`: Always `8453` (Base)
+- `originCurrency`: Always `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913` (USDC on Base)
+
+Common destinations:
+
+| Destination | chainId | currency address | Example |
+|-------------|---------|-----------------|---------|
+| **Bitcoin (nativo)** | `8253038` | `bc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqmql8k8` | BTC a dirección bc1... |
+| Ethereum ETH | `1` | `0x0000000000000000000000000000000000000000` | ETH nativo |
+| Solana SOL | `792703809` | `11111111111111111111111111111111` | SOL nativo |
+| Arbitrum USDC | `42161` | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | USDC en Arbitrum |
+| Hyperliquid | `1337` | Check relay.link | USDC en Hyperliquid |
+| Base USDC | `8453` | N/A — no bridge needed | Directo |
+
+The Relay quote response contains exact fees in `fees.relayer` and `fees.gas`, plus the output amount in `details.currencyOut`. Use these real numbers instead of estimating.
+
+**Always query Relay when the user wants a non-Base token.** Never estimate bridge fees — the API gives exact costs in real time.
+
+### Bridge architecture
+
+Peer uses **Across Protocol** (via `AcrossBridgeHookV2` smart contract) for cross-chain bridging. **Relay.link** is the API/routing layer built on top of Across.
+
+- For **EVM chains**: AcrossBridgeHook deposits USDC into the Across SpokePool. A relayer delivers tokens on the destination chain.
+- For **Bitcoin (nativo)**: Relay handles the USDC→BTC swap. The relayer sends real BTC to the user's `bc1...` address on the Bitcoin network.
+- Trust model: **optimistic** — relayers advance funds with economic guarantees enforced by UMA Oracle. Not a trusted third party, but not a trustless atomic swap either.
+- Fallback: If the bridge fails, the user receives USDC on Base instead (graceful degradation, never loses funds).
 
 ### Presenting Recommendations
 
@@ -115,7 +158,7 @@ Best options to buy with [CURRENCY]:
 For $[USER_AMOUNT], that's ~$[FEE] in fees with option 1.
 ```
 
-If the user wants Bitcoin or a non-USDC token, explain that Peer delivers USDC on Base and automatically bridges/swaps to the destination chain and token. Add bridge fee to total cost.
+When the user wants a non-Base destination (BTC, ETH, SOL, etc.), **always run the Relay quote** and include the bridge fee in the total cost breakdown. Show the exact output amount in the destination token.
 
 ### Market Overview Query
 
@@ -462,18 +505,23 @@ When helping users decide, consider these factors:
 | Scenario | Chain | Why |
 |----------|-------|-----|
 | Lowest total cost | Base | Native, no bridge fee |
-| DeFi on Ethereum | Ethereum | Bridge ~0.1-0.5% extra |
-| Trading on Hyperliquid | Hyperliquid | Bridge ~0.1-0.3% extra |
-| Solana ecosystem | Solana | Bridge ~0.1-0.5% extra |
+| **Want BTC nativo** | **Bitcoin (8253038)** | **BTC real a dirección bc1... via Relay** |
+| DeFi on Ethereum | Ethereum | Query Relay for exact fee |
+| Trading on Hyperliquid | Hyperliquid | Query Relay for exact fee |
+| Solana ecosystem | Solana | Query Relay for exact fee |
 | Don't know | Base | Cheapest and fastest |
 
-### Bitcoin Calculation
+**Always query the Relay API** (see Section 1) for exact bridge fees instead of estimating.
 
-Peer delivers USDC. To get Bitcoin:
-1. USDC arrives on Base
-2. Automatic bridge+swap to BTC on destination chain
-3. Total cost = spread + 0.5% protocol + bridge/swap fee (~0.3-1%)
-4. Or user can receive USDC and swap to BTC themselves on any DEX
+### Bitcoin (BTC nativo)
+
+Peer + Relay.link support **native BTC on the Bitcoin network** — not wrapped tokens. The flow:
+1. USDC released from escrow on Base
+2. Relay.link swaps USDC → BTC and sends to the user's `bc1...` address
+3. Total cost = spread + 0.5% protocol + Relay fee (~0.13% for $500)
+4. Time: ~4-6 minutes total
+
+Query exact BTC output with the Relay quote API (see Total Cost Calculation section).
 
 ---
 
