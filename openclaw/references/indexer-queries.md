@@ -145,9 +145,39 @@ Replace `CURRENCY_HASH` with the hash from the table above.
 }
 ```
 
-### 2b. Check manager fee for a deposit
+### 2b. Determine manager fee for a deposit (real-time)
 
-The `managerFee` field lives on `Intent`, not `Deposit`. To determine the fee a deposit charges, query its most recent fulfilled intent:
+**Primary method**: read `rateManagerId` directly from the Deposit (updates in real-time in the indexer):
+
+```graphql
+{
+  Deposit(
+    where: { depositId: { _eq: "DEPOSIT_ID" } }
+    order_by: { updatedAt: desc }
+    limit: 1
+  ) {
+    depositId
+    rateManagerId
+    rateManagerAddress
+    updatedAt
+  }
+}
+```
+
+Then look up the fee using this table (verified across 500+ trades, zero exceptions):
+
+| `rateManagerId` | Fee |
+|---|---|
+| `null` | **0%** — always, no exceptions |
+| `0x65b1056ef2dbdcd3b5f9ac170bb89eb2718b3a7a09d7eb0160d15623cfeefc6e` | **0.100%** |
+| `0x8666d6fb0f6797c56e95339fd7ca82fdd348b9db200e10a4c4aa0a0b879fc41c` | **0.100%** |
+| `0xd99ad8f04bc1118c176e77bfd8a53ac156edcabdff2cb329a209155c712800ec` | **0.095%** |
+
+Each `rateManagerId` identifies an ARM config contract — the fee is baked into that config and stays consistent. A seller can migrate their deposit to a different ARM (changing the `rateManagerId`), but the mapping from ID→fee is stable.
+
+**Important**: Deposits can have multiple rows in the indexer (versioned). Always use `order_by: { updatedAt: desc }, limit: 1` to get the current state. Deposit 144 migrated from null→ARM on 2026-03-28, and the indexer reflected this in real-time.
+
+**Fallback for unknown `rateManagerId`**: query the most recent fulfilled intent:
 
 ```graphql
 {
@@ -162,17 +192,17 @@ The `managerFee` field lives on `Intent`, not `Deposit`. To determine the fee a 
     managerFee
     managerFeeAmount
     managerFeeRecipient
+    rateManagerId
   }
 }
 ```
 
-**Shortcut:** If the Deposit has `rateManagerId: null` → fee is always 0%. If `rateManagerId` is set (ARM-managed deposit) → fee is typically 0.1% but can vary. The ARM operator can change the fee at any time, so always check the latest intent for certainty.
+Add any new `rateManagerId`→fee mapping you discover to the lookup table above.
 
 Fee values (18-decimal format):
-- `0` → 0% fee
+- `0` or `null` → 0% fee
 - `950000000000000` → 0.095%
 - `1000000000000000` → 0.1%
-```
 
 ### 3. All active rates across all currencies (market overview)
 

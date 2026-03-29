@@ -95,14 +95,28 @@ Compare every `paymentMethodHash` and `currencyCode` in the response against the
 Total cost % = spread + manager fee (0–0.1%) + bridge/swap fee (if applicable)
 ```
 
-**There is no protocol-level fee.** What exists is a per-deposit `managerFee` set by the ARM (Automated Rate Manager) operator — it is NOT a platform fee. How to determine the fee for a given deposit:
+**There is no protocol-level fee.** What exists is a per-deposit `managerFee` set by the ARM (Automated Rate Manager) operator — it is NOT a platform fee.
 
-1. **No ARM** (`rateManagerId` is null on the Deposit) → **always 0% fee**. These are legacy/manual deposits where the seller sets rates by hand.
-2. **Has ARM** (`rateManagerId` is not null) → fee is set by the ARM operator, typically **0.1%** (`managerFee: 1000000000000000` in 18-decimal format). Some charge 0.095% (`950000000000000`). The operator can change this at any time — deposit 144 historically switched from 0% to 0.1%.
+**How to determine the fee for a deposit in real-time:**
 
-To check the exact fee before a trade: query a recent fulfilled `Intent` for that `depositId` and read its `managerFee` field. The `managerFee` field lives on `Intent`, not on `Deposit`. The fee is deducted on-chain from `takerAmountNetFees` (buyer receives `amount - managerFeeAmount`). The web UI shows the **gross** amount before this deduction.
+1. Query the Deposit from the indexer and check its `rateManagerId` field (this updates in real-time — verified when deposit 144 migrated to ARM).
+2. Look up the fee using this table:
 
-In practice (verified across 48h of trades): ~80% of deposits by count charge 0%, but the highest-volume EUR/Revolut deposits (ID 236, 237, 350) charge 0.1% because they use ARM.
+| `rateManagerId` | Fee | Notes |
+|---|---|---|
+| `null` | **0%** always | Legacy/manual deposits, no ARM |
+| `0x65b1056ef2dbdcd3b5f9ac170bb89eb2718b3a7a09d7eb0160d15623cfeefc6e` | **0.100%** | ARM operator A |
+| `0x8666d6fb0f6797c56e95339fd7ca82fdd348b9db200e10a4c4aa0a0b879fc41c` | **0.100%** | ARM operator B |
+| `0xd99ad8f04bc1118c176e77bfd8a53ac156edcabdff2cb329a209155c712800ec` | **0.095%** | ARM operator C |
+| (unknown new ID) | **query fallback** | See step 3 |
+
+3. **Fallback for unknown `rateManagerId`**: query the most recent fulfilled `Intent` for that deposit and read its `managerFee` field (see query 2b in references). Then add the new ID to your lookup.
+
+Each `rateManagerId` maps to a consistent fee (verified across 500+ trades — zero exceptions). The ID identifies the ARM configuration contract, and the fee is baked into that config. A seller can migrate their deposit to a different ARM (like deposit 144 did), which changes the `rateManagerId` on the Deposit in the indexer — but the mapping from ID→fee stays stable.
+
+**Important**: the fee is deducted on-chain from `takerAmountNetFees` (buyer receives `amount - managerFeeAmount`). The web UI shows the **gross** amount before this deduction.
+
+In practice: ~80% of deposits by count charge 0% (no ARM), but the highest-volume EUR/Revolut deposits (ID 236, 237, 350) charge 0.1% because they use ARM.
 
 **For USDC on Base**: No bridge fee. Total = spread + manager fee.
 
