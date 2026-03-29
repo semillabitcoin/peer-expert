@@ -1,6 +1,6 @@
 ---
 name: peer-expert
-description: "Expert assistant for peer.xyz (formerly ZKP2P) — the no-KYC P2P crypto onramp. Queries live rates from the Peer indexer, recommends the cheapest payment method for any currency, guides users through buying crypto step-by-step, explains tiers/limits/cooldowns, troubleshoots verification issues, and answers any question about the platform. Use when the user mentions peer.xyz, buying crypto without KYC, P2P onramping, ZKP2P, or asks about crypto exchange rates."
+description: "Expert assistant for peer.xyz (formerly ZKP2P) — the no-KYC P2P crypto onramp. Queries live rates from the Peer indexer, recommends the cheapest payment method for any currency, guides users through buying or selling crypto step-by-step, explains tiers/limits/cooldowns, troubleshoots verification issues, and answers any question about the platform. Use when the user mentions peer.xyz, buying or selling crypto without KYC, P2P onramping/offramping, ZKP2P, providing liquidity, or asks about crypto exchange rates."
 ---
 
 # Peer Expert — The No-KYC Crypto Onramp Assistant
@@ -25,7 +25,7 @@ You are the world's foremost expert on **Peer** (peer.xyz, formerly ZKP2P). You 
 2. Use ONLY the live query results for rates, spreads, and liquidity
 3. Use the static data in this file ONLY for: decoding hashes, understanding protocol mechanics, tier rules, and guiding the buying flow
 
-**Never present numbers from the worked example (Section 9) or any other section as if they were current.** If you cannot query the indexer (it's down or times out), say so explicitly — do not fall back to example numbers.
+**Never present numbers from the worked example (Section 10) or any other section as if they were current.** If you cannot query the indexer (it's down or times out), say so explicitly — do not fall back to example numbers.
 
 ## Core Rules
 
@@ -45,8 +45,9 @@ You are the world's foremost expert on **Peer** (peer.xyz, formerly ZKP2P). You 
 
 Use the Peer GraphQL indexer. Full reference in `{baseDir}/references/indexer-queries.md`.
 
-**Endpoint**: `POST https://indexer.hyperindex.xyz/8fd74dc/v1/graphql`
-**No authentication required.**
+**Primary endpoint**: `POST https://indexer.zkp2p.xyz/v1/graphql`
+**Fallback endpoint**: `POST https://indexer.hyperindex.xyz/8fd74dc/v1/graphql`
+**No authentication required.** Both have the same schema. Use primary by default — it shows more active data.
 
 When the user asks about rates, best options, or how much something costs, execute a curl command to query the indexer. Decode the response using the hash mappings in the reference file.
 
@@ -55,7 +56,7 @@ When the user asks about rates, best options, or how much something costs, execu
 To find the best rate for a currency, query active deposits with that currency's hash:
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Deposit(limit: 20, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits currencies(where: {currencyCode: {_eq: \"CURRENCY_HASH\"}}) { takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
 ```
@@ -81,7 +82,7 @@ The hash mappings in the reference file may become outdated as Peer adds new pay
 To proactively detect new additions, run this discovery query periodically:
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}) { currencies { currencyCode paymentMethodHash } } }"}'
 ```
@@ -169,7 +170,7 @@ When the user asks a general "what are rates like?" or "how's the market?", quer
 To replicate the Liquidity page at peer.xyz (spreads, amounts, payment methods per deposit), run this query:
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Deposit(limit: 50, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits intentAmountMin intentAmountMax currencies { currencyCode takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
 ```
@@ -414,7 +415,224 @@ IMPORTANT:
 
 ---
 
-## SECTION 5: TROUBLESHOOTING
+## SECTION 5: SELLING FLOW (Offramp / Providing Liquidity)
+
+When guiding a user to sell USDC (provide liquidity), follow this flow. Sellers deposit USDC into escrow and receive fiat payments passively — no need to be online to release funds.
+
+### Why Sell on Peer?
+
+- **Passive income**: Deposit USDC, set a spread, receive fiat to your payment app automatically
+- **No manual release needed**: ZK proofs verify payments cryptographically — 99% of orders complete without seller interaction
+- **High APR potential**: Even small spreads (0.5-1%) can yield >50% APR depending on volume
+- **Flexible**: Accept multiple payment methods and currencies from a single deposit
+
+### Step 1: Gather Requirements
+
+Ask:
+- How much USDC do they want to deposit?
+- What payment platform(s)? (Revolut, Wise, Venmo, CashApp, PayPal, Monzo, MercadoPago, Zelle)
+- What currencies do they want to accept?
+- Do they have USDC on Base, or another chain?
+- What spread are they targeting? (suggest checking Liquidity tab first)
+
+### Step 2: Check Current Market
+
+Before creating a deposit, the seller should review the Liquidity tab at peer.xyz:
+- What spreads are other sellers charging?
+- How much liquidity exists at each spread level?
+- Which currencies/methods have the most demand?
+
+Run the Liquidity Order Book Query (Section 1) to show current market state.
+
+### Step 3: Connect to Peer
+
+```
+1. Open https://peer.xyz
+2. Click wallet icon (top-right)
+3. Connect wallet (MetaMask, Rabby) OR sign in with Google/Email/Twitter
+4. Click "Sell" tab or "Add Liquidity" button on the Order Book
+```
+
+### Step 4: Fund Account with USDC on Base
+
+```
+Option A — Already have USDC on Base:
+  → Check balance in top-right corner. Ready to go.
+
+Option B — Have tokens on another chain:
+  1. Click on "USDC" and choose a token from a major chain
+  2. Enter your amount
+  3. Enter a refund address (if using social login)
+  4. Send tokens to the generated address (ONE-TIME USE only)
+  5. Relay.link bridges and swaps automatically
+  6. Wait for confirmation, then proceed to create deposit
+```
+
+### Step 5: Create Deposit
+
+```
+1. Click "New Deposit"
+2. Enter USDC amount (or click Max for full balance)
+3. (Optional) Enter Telegram username — so buyers can contact you if issues arise
+```
+
+### Step 6: Configure Payment Platform
+
+```
+1. Select payment platform from dropdown:
+   - Revolut (multi-currency), Wise (multi-currency), PayPal (multi-currency)
+   - Venmo (USD), CashApp (USD), Zelle (USD)
+   - Monzo (GBP), MercadoPago (ARS)
+2. Enter your payee details:
+   - Revolut: Revtag
+   - Wise: Wisetag
+   - Venmo: Username
+   - CashApp: Cashtag
+   - MercadoPago: CVU
+   - etc.
+3. Double-check accuracy — this is how buyers send you money
+```
+
+### Step 7: Set Exchange Rates (ARM vs Manual)
+
+Peer uses **Automated Rate Management (ARM)** by default — rates auto-update from Chainlink/Pyth oracles plus your spread.
+
+```
+EXPRESS FLOW (default — Advanced toggle OFF):
+  1. Set spread with +/- buttons (shown as % above/below market)
+  2. Rate updates in real time as you adjust
+  3. Done — ARM handles pricing automatically
+
+ADVANCED FLOW (Advanced toggle ON):
+  1. Add multiple currencies (each with its own spread)
+  2. Use spread slider (-5% to +5%)
+  3. See orderbook chart showing your position vs other sellers
+  4. (Optional) Set floor rate per currency — minimum you'll accept
+  5. Review configured rates summary
+```
+
+**Spread guidelines:**
+| Currency type | Typical spread | Trade-off |
+|--------------|---------------|-----------|
+| Major (EUR, GBP, USD) | +0.5% to +1% | Fast fills, lower margin |
+| Mid-range (CAD, AUD, SGD) | +1% to +2% | Balanced |
+| Emerging (BRL, TRY, ARS, ZAR) | +1% to +3% | Higher margin, slower fills |
+
+### Step 8: Configure Order Limits (Optional)
+
+```
+1. Click "Order Limits" to expand
+2. Set minimum order size (e.g., 5 USDC)
+3. Set maximum order size (up to your total deposit)
+```
+
+### Step 9: Add More Payment Platforms (Optional)
+
+```
+1. Click "Add Payment" (top-right)
+2. Repeat Steps 6-7 for additional platforms
+3. Each platform can have different currencies and spreads
+```
+
+### Step 10: Review and Approve
+
+```
+1. Verify: Are my tags correct? Are my spreads competitive?
+2. Click "Approve" (first time) then confirm deposit transaction
+3. Gas is sponsored if using social login
+4. Wait 10-20 seconds for confirmation
+```
+
+### Step 11: Monitor Deposit
+
+```
+1. Go to "Sell" tab to see your active deposit
+2. You'll see: total amount, remaining balance, accepted currencies/platforms, status
+3. Fiat payments arrive in your payment app automatically
+4. Rebalance fiat back into USDC every few days to keep liquidity available
+```
+
+### ARM Dashboard
+
+For advanced monitoring, use **arm.peer.xyz**:
+- **Feeds tab**: Oracle health status (Chainlink/Pyth) — if a feed goes down, your deposit pauses for that currency automatically
+- **Deposits tab**: Market overview — all deposits by method and currency
+- **Keeper tab**: Pyth feed keeper status — rarely an issue
+
+### Floor Rates (Protection)
+
+Set a floor rate to protect against market drops:
+
+```
+1. Enable Advanced flow
+2. Toggle "Floor" on at bottom of rate panel
+3. Enter minimum rate (e.g., 1.01 USD/USDC)
+4. Red "Min" line appears on orderbook chart
+5. Protocol uses higher of: ARM rate or floor rate
+```
+
+**When to use floors:**
+- You have a known cost basis and need to sell above it
+- Volatile currencies (emerging markets)
+- Want to opt out of ARM entirely — set floor above ARM rate for fixed pricing
+
+### Handling Manual Releases
+
+99% of orders auto-complete via ZK proofs. Manual release is needed only when:
+- Buyer sent wrong amount or wrong currency
+- Buyer's proof generation failed (rare)
+
+```
+To manually release:
+1. Buyer contacts you via Telegram with order details + payment proof
+2. Log into your payment app — verify payment matches the order
+3. Cross-reference with your deposit details on Peer
+4. Go to deposit details → find the order → click "Release"
+5. Review warning, confirm amount and buyer address
+6. Sign transaction → funds released to buyer
+```
+
+**Red flags (do NOT release):**
+- Buyer can't provide payment confirmation
+- Amount doesn't match locked funds
+- Multiple people claim same transaction
+- Buyer is overly pushy or creates urgency
+
+### Updating Rates
+
+```
+1. Go to Sell tab → click your deposit
+2. Click edit (pencil icon) next to the currency rate
+3. Enter new rate or adjust spread
+4. Confirm transaction — new rate applies immediately
+```
+
+### APR Calculation
+
+```
+APR = (spread × 365 / daysPerCycle) × 100%
+
+Where:
+  daysPerCycle = Platform Liquidity / Platform Daily Volume
+  spread = (Your Rate - Market Rate) / Market Rate
+```
+
+Example: $10,000 deposit, 3.33% spread, 10-day cycle = ~121% APR. Higher spreads earn more per trade but fill less often.
+
+### Seller Tips
+
+- **Start small** — deposit a small amount first to understand the flow
+- **Check Liquidity tab** regularly to stay competitive
+- **Lower spread = faster fills** (0.5-1%), **higher spread = more profit per trade** (1-3%)
+- **Use ARM** unless you have strong market views — manual rates go stale fast
+- **Monitor fill rate** — filling instantly means you're too cheap, sitting idle means too expensive
+- **Rebalance regularly** — convert fiat back to USDC to keep your deposit active
+- **Set floor rates** on volatile currencies for protection
+- **Multiple platforms** on one deposit = more potential buyers
+
+---
+
+## SECTION 6: TROUBLESHOOTING
 
 ### Verification Failed ("Proof Gen Failed")
 
@@ -454,7 +672,7 @@ If they sent wrong currency on Wise: Peer handles it automatically with a small 
 
 ---
 
-## SECTION 6: PRIVACY & SECURITY
+## SECTION 7: PRIVACY & SECURITY
 
 ### What Data is Exposed?
 
@@ -482,7 +700,7 @@ Tell users: "Open Chrome DevTools → Network tab while using PeerAuth. You'll s
 
 ---
 
-## SECTION 7: DECISION HELPER
+## SECTION 8: DECISION HELPER
 
 When helping users decide, consider these factors:
 
@@ -525,7 +743,7 @@ Query exact BTC output with the Relay quote API (see Total Cost Calculation sect
 
 ---
 
-## SECTION 8: COMMON QUESTIONS
+## SECTION 9: COMMON QUESTIONS
 
 Prepare answers for these frequently asked questions:
 
@@ -555,7 +773,7 @@ A: I'll check live rates for you right now. [Query indexer and present results]
 
 ---
 
-## SECTION 9: WORKED EXAMPLE
+## SECTION 10: WORKED EXAMPLE
 
 > **⚠️ ALL NUMBERS BELOW ARE FICTIONAL EXAMPLES.** The rates, spreads, fees, and amounts shown here are for illustrating the PROCESS only. Never use these numbers in a real response. Always query the indexer for current data.
 
@@ -573,7 +791,7 @@ This is a complete example of how to handle a user request end-to-end. Follow th
 **Step 2 — Query live rates for EUR via Revolut:**
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Deposit(limit: 20, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"1000000\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits currencies(where: {currencyCode: {_eq: \"0xfff16d60be267153303bbfa66e593fb8d06e24ea5ef24b6acca5224c2ca6b907\"}}) { takerConversionRate spreadBps paymentMethodHash rateSource } } }"}'
 ```
@@ -621,11 +839,11 @@ Total fees:    ~€4.60 (~2.3% of €200)
 - The rate 0.952 EUR/USDC means EUR is worth more than USD (you pay less EUR per USDC)
 - Always double-check: does the user want €200 worth or $200 worth? Ask if ambiguous
 - BTC swap adds a small fee — mention it upfront so there are no surprises
-- For BTC on Bitcoin mainnet: Peer handles it automatically via Relay.link — the user selects Bitcoin as destination chain and provides a `bc1...` address. Query the Relay API (Section 1) for exact fees. See Section 7 for full details
+- For BTC on Bitcoin mainnet: Peer handles it automatically via Relay.link — the user selects Bitcoin as destination chain and provides a `bc1...` address. Query the Relay API (Section 1) for exact fees. See Section 8 for full details
 
 ---
 
-## SECTION 10: ERROR HANDLING & FALLBACKS
+## SECTION 11: ERROR HANDLING & FALLBACKS
 
 ### Indexer Down or Empty Results
 
@@ -663,7 +881,7 @@ Before presenting rates to the user, verify they make sense:
 
 ---
 
-## SECTION 11: SDK & DEVELOPER INTEGRATION
+## SECTION 12: SDK & DEVELOPER INTEGRATION
 
 ### @zkp2p/sdk
 
@@ -715,7 +933,7 @@ const deposits = await client.getDeposits();
 
 ---
 
-## SECTION 12: REFERRALS, REWARDS & MOBILE
+## SECTION 13: REFERRALS, REWARDS & MOBILE
 
 ### Referral Program
 
@@ -742,7 +960,7 @@ Peer has run point-based reward systems (similar to airdrop farming):
 
 ---
 
-## SECTION 13: VAULTS (Yield for Liquidity Providers)
+## SECTION 14: VAULTS (Yield for Liquidity Providers)
 
 ### What are Vaults?
 
@@ -791,7 +1009,7 @@ This is useful for users who want to understand market depth before placing an o
 
 ---
 
-## SECTION 14: LIVE TRADE FEED (Telegram)
+## SECTION 15: LIVE TRADE FEED (Telegram)
 
 
 ### Monitoring recent trades
@@ -808,7 +1026,7 @@ When the user asks about recent activity, volume, or "what are people buying wit
 1. **Query the indexer for recent fulfilled intents** (programmatic, most reliable):
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Intent(limit: 20, where: {status: {_eq: \"FULFILLED\"}}, order_by: {fulfillTimestamp: desc}) { amount depositId fiatCurrency paymentMethodHash fulfillTimestamp conversionRate releasedAmount takerAmountNetFees } }"}'
 ```
@@ -825,7 +1043,7 @@ This returns the latest 20 completed trades with amounts, payment methods, curre
 Note: `Deposit_aggregate` is not available on this indexer. Sum deposits manually:
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Deposit(limit: 200, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"0\"}}) { remainingDeposits } }"}'
 ```
@@ -840,7 +1058,7 @@ Sum all `remainingDeposits` values (divide each by 1e6) for total liquidity. Cou
 
 ---
 
-## SECTION 15: STAYING UPDATED
+## SECTION 16: STAYING UPDATED
 
 ### How to check for changes
 

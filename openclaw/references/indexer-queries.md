@@ -2,12 +2,19 @@
 
 ## Endpoint
 
+**Primary** (more complete data — includes all active currencies and payment methods):
 ```
-POST https://indexer.hyperindex.xyz/8fd74dc/v1/graphql
+POST https://indexer.zkp2p.xyz/v1/graphql
 Content-Type: application/json
 ```
 
-No authentication required. Public GraphQL endpoint.
+**Fallback** (if primary is down):
+```
+POST https://indexer.zkp2p.xyz/v1/graphql
+Content-Type: application/json
+```
+
+No authentication required. Both are public GraphQL endpoints with the same schema. Use the primary endpoint by default — it consistently shows more active deposits and currencies.
 
 ## Payment Method Hashes
 
@@ -39,7 +46,8 @@ AUD: 0xcb83cbb58eaa5007af6cad99939e4581c1e1b50d65609c30f303983301524ef3
 CHF: 0xc9d84274fd58aa177cabff54611546051b74ad658b939babaad6282500300d36
 MXN: 0xa94b0702860cb929d0ee0c60504dd565775a058bf1d2a2df074c1db0a66ad582
 ARS: 0x8fd50654b7dd2dc839f7cab32800ba0c6f7f66e1ccf89b21c09405469c2175ec
-BRL: (not currently listed — check for updates)
+BRL: (no active liquidity yet — ARM oracle feed exists at arm.peer.xyz)
+NGN: (no active liquidity yet — ARM oracle feed exists at arm.peer.xyz)
 NZD: 0xdbd9d34f382e9f6ae078447a655e0816927c7c3edec70bd107de1d34cb15172e
 SGD: 0xc241cc1f9752d2d53d1ab67189223a3f330e48b75f73ebf86f50b2c78fe8df88
 JPY: 0xfe13aafd831cb225dfce3f6431b34b5b17426b6bff4fccabe4bbe0fe4adc0452
@@ -251,7 +259,7 @@ Available Intent fields: `amount`, `conversionRate`, `depositId`, `expiryTime`, 
 ## curl Template
 
 ```bash
-curl -sL -X POST "https://indexer.hyperindex.xyz/8fd74dc/v1/graphql" \
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
   -H "Content-Type: application/json" \
   -d '{"query": "YOUR_QUERY_HERE"}'
 ```
