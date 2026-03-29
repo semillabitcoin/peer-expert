@@ -127,6 +127,7 @@ Replace `CURRENCY_HASH` with the hash from the table above.
     depositId
     remainingDeposits
     acceptingIntents
+    rateManagerId
     currencies {
       currencyCode
       conversionRate
@@ -142,6 +143,35 @@ Replace `CURRENCY_HASH` with the hash from the table above.
     }
   }
 }
+```
+
+### 2b. Check manager fee for a deposit
+
+The `managerFee` field lives on `Intent`, not `Deposit`. To determine the fee a deposit charges, query its most recent fulfilled intent:
+
+```graphql
+{
+  Intent(
+    limit: 1
+    where: {
+      depositId: { _eq: "FULL_DEPOSIT_ID" }
+      status: { _eq: "FULFILLED" }
+    }
+    order_by: { fulfillTimestamp: desc }
+  ) {
+    managerFee
+    managerFeeAmount
+    managerFeeRecipient
+  }
+}
+```
+
+**Shortcut:** If the Deposit has `rateManagerId: null` → fee is always 0%. If `rateManagerId` is set (ARM-managed deposit) → fee is typically 0.1% but can vary. The ARM operator can change the fee at any time, so always check the latest intent for certainty.
+
+Fee values (18-decimal format):
+- `0` → 0% fee
+- `950000000000000` → 0.095%
+- `1000000000000000` → 0.1%
 ```
 
 ### 3. All active rates across all currencies (market overview)
@@ -189,6 +219,7 @@ Returns all active deposits with their spreads, amounts, and payment methods —
     remainingDeposits
     intentAmountMin
     intentAmountMax
+    rateManagerId
     currencies {
       currencyCode
       takerConversionRate
