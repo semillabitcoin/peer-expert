@@ -130,23 +130,17 @@ Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scrol
 
 ### OpenClaw
 
-**Umbrel:** Install from the Umbrel app store — skills are managed automatically.
-
-**Docker / VPS / Local:** Copy the skill files to your OpenClaw skills directory.
+Copy the skill files to your OpenClaw skills directory:
 
 ```bash
-# Quick install (replace YOUR_SKILLS_DIR with your OpenClaw skills path)
 git clone https://github.com/semillabitcoin/peer-expert.git /tmp/peer-expert && \
 cp -r /tmp/peer-expert/openclaw/ <YOUR_SKILLS_DIR>/peer-expert/ && \
 rm -rf /tmp/peer-expert
 ```
 
-Common skills directory locations:
-- **Docker:** Check your `docker-compose` volume mount for `/skills`
-- **Local:** `~/.openclaw/skills/`
-- **Custom:** Whatever path you set in `OPENCLAW_SKILLS_DIR`
+Replace `<YOUR_SKILLS_DIR>` with your OpenClaw skills path (e.g. `~/.openclaw/skills/`, a Docker volume mount, or whatever you set in `OPENCLAW_SKILLS_DIR`).
 
-**Restart OpenClaw** (or start a new session), then test it from any connected channel (WhatsApp, Telegram, Discord, Slack, Signal, etc.):
+**Restart OpenClaw** (or start a new session), then test it from any connected channel:
 
 > "What's the cheapest way to buy $100 of crypto right now?"
 
