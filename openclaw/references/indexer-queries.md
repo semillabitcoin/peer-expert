@@ -232,16 +232,16 @@ Fee values (18-decimal format):
 
 ### 4. Liquidity order book (replicates peer.xyz/liquidity)
 
-Returns all active deposits with their spreads, amounts, and payment methods — same data as the Liquidity page.
+Returns all active deposits with their spreads, amounts, and payment methods — same data as the Liquidity page. Filter by currency hash to get one currency's order book.
 
 ```graphql
 {
   Deposit(
-    limit: 50
+    limit: 100
     where: {
       acceptingIntents: { _eq: true }
       status: { _eq: "ACTIVE" }
-      remainingDeposits: { _gt: "1000000" }
+      remainingDeposits: { _gt: "0" }
     }
     order_by: { remainingDeposits: desc }
   ) {
@@ -250,9 +250,10 @@ Returns all active deposits with their spreads, amounts, and payment methods —
     intentAmountMin
     intentAmountMax
     rateManagerId
-    currencies {
+    currencies(where: { currencyCode: { _eq: "CURRENCY_HASH" } }) {
       currencyCode
       takerConversionRate
+      conversionRate
       spreadBps
       paymentMethodHash
       rateSource
@@ -261,15 +262,27 @@ Returns all active deposits with their spreads, amounts, and payment methods —
 }
 ```
 
+Remove the `currencies(where: ...)` filter to get all currencies at once.
+
+Presentation (replicate peer.xyz/liquidity):
+- Each currency x paymentMethod combo = one row (a single deposit may produce multiple rows)
+- Skip deposits with empty `currencies: []` (no match for the filtered currency)
+- Sort by `takerConversionRate` ascending (cheapest price first, like the web)
+- Show columns: Price | Spread | Amount | Total (cumulative) | Providers
+- Price = `takerConversionRate / 1e18` (4 decimal places)
+- Spread = `spreadBps / 100` as %. If null, derive from `(takerRate - lowestOracleRate) / lowestOracleRate * 100`
+- Amount = `remainingDeposits / 1e6` (USDC)
+- Total = running sum of Amount
+- If multiple entries share the same price (within 0.0001), group and sum amounts
+
 Decoding notes:
-- `spreadBps` is an integer (basis points) — this is the exact value the maker configured. 1 bps = 0.01% resolution. Can be `null` for `NO_FLOOR` entries
+- `spreadBps` is an integer (basis points) — the exact value the maker configured. 1 bps = 0.01% resolution. Can be `null` for `MANAGER` or `NO_FLOOR` entries
+- `conversionRate` is the base rate before spread — useful for calculating real spread vs oracle
 - `rateSource` values:
   - `ORACLE` — rate auto-updates from market oracle + spread. Most reliable
   - `MANAGER` — vault/strategy managed. Reliable, may adjust dynamically
   - `ESCROW_FLOOR` — fixed rate set manually by maker. May be stale
   - `NO_FLOOR` — no minimum rate. Usually has null spread and zero rate — skip these
-- Each deposit may have multiple currencies × payment methods (one entry per combo)
-- Sort by `spreadBps` ascending to show cheapest first
 - Skip entries with `rateSource: NO_FLOOR` or `takerConversionRate: 0`
 - Flag `ESCROW_FLOOR` deposits whose spread looks off vs `ORACLE` deposits — maker may have forgotten to update
 
