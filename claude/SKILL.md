@@ -76,21 +76,38 @@ Filter by `CURRENCY_HASH` to get one currency's order book (like the web). Witho
 
 ### Presenting the Order Book (like peer.xyz)
 
-Each currency x paymentMethod combination = one row. Sort by `takerConversionRate` ascending (cheapest first).
+**Step 1 — Derive oracle reference rate:**
+From all ORACLE entries with `spreadBps` not null, compute:
+`oracleRef = conversionRate / (1 + spreadBps / 10000)`
+All should give the same value (e.g., 0.8700 for EUR). Use the median.
 
+**Step 2 — Filter:**
+- Skip `rateSource: NO_FLOOR` or `takerConversionRate: 0`
+- Skip deposits with empty `currencies: []`
+- Skip `ESCROW_FLOOR` where `takerConversionRate < oracleRef` (stale below-market)
+
+**Step 3 — Compute effective spread:**
+`spread = (takerConversionRate / 1e18 / oracleRef - 1) * 100`
+(NOT from `spreadBps` — that is the maker's configured spread, not the effective spread vs oracle)
+
+**Step 4 — Group and sort:**
+- Group entries within 0.0001 of same price: sum amounts, combine providers, show (N) count
+- Sort by price ascending (cheapest first)
+
+**Step 5 — Present:**
 ```
-| Price    | Spread | Amount    | Total     | Providers |
-|----------|--------|-----------|-----------|-----------|
-| 0.8694   | +0.06% | 750.15    | 750.15    | N26       |
-| 0.8746   | +0.66% | 2,627.87  | 3,378.02  | Revolut   |
+| Price  | (N) | Spread | Amount    | Total     | Providers     |
+|--------|-----|--------|-----------|-----------|---------------|
+| 0.8700 | (4) | +0.10% | 750.15    | 750.15    | N26, Revolut  |
+| 0.8752 | (2) | +0.70% | 2,627.87  | 3,378.02  | Revolut       |
 ```
 
 - **Price**: `takerConversionRate / 1e18` (4 decimals)
-- **Spread**: `spreadBps / 100` as percentage. If null, calculate: `(takerRate - lowestOracleRate) / lowestOracleRate * 100`
-- **Amount**: `remainingDeposits / 1e6` (USDC available at this price)
-- **Total**: running cumulative sum of Amount column
+- **Spread**: effective spread from Step 3 (may differ ~0.1% from web due to oracle timing)
+- **Amount**: `remainingDeposits / 1e6` for the group
+- **Total**: running cumulative sum
 - **Providers**: decoded payment method name(s)
-- If multiple deposits share the same price (within 0.0001), group them and sum their amounts
+- **APR**: requires per-deposit fill rate data — show "-" (web computes from backend volume data)
 
 ### Payment Method Hashes
 

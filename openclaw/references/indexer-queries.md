@@ -219,15 +219,31 @@ When presenting results:
 - The web at peer.xyz shows this as different payment methods with specific max amounts per method
 
 Presentation (replicate peer.xyz/liquidity):
-- Each currency x paymentMethod combo = one row (a single deposit may produce multiple rows)
-- Skip deposits with empty `currencies: []` (no match for the filtered currency)
-- Sort by `takerConversionRate` ascending (cheapest price first, like the web)
-- Show columns: Price | Spread | Amount | Total (cumulative) | Providers
-- Price = `takerConversionRate / 1e18` (4 decimal places)
-- Spread = `spreadBps / 100` as %. If null, derive from `(takerRate - lowestOracleRate) / lowestOracleRate * 100`
+
+**Derive oracle reference rate first:**
+From all entries with `rateSource: ORACLE` and `spreadBps` not null:
+`oracleRef = conversionRate / (1 + spreadBps / 10000)`
+All ORACLE entries should give the same value. Use the median.
+
+The Chainlink feed is also available: `ChainlinkAggregatorV3_AnswerUpdated(limit:1, where:{feed:{_eq:"EUR_FEED_ADDRESS"}}, order_by:{updatedAt:desc}) { current }` — divide by 1e8 for EUR/USD, then `1 / eurUsd` for EUR/USDC.
+
+**Filtering:**
+- Skip `currencies: []`, `rateSource: NO_FLOOR`, `takerConversionRate: 0`
+- Skip `ESCROW_FLOOR` where `takerConversionRate / 1e18 < oracleRef` (stale below-market rates)
+
+**Spread calculation:**
+`effectiveSpread = (takerConversionRate / 1e18 / oracleRef - 1) * 100`
+Do NOT use `spreadBps` directly — it is the maker's configured value, not the effective spread vs current oracle.
+
+**Grouping and sorting:**
+- Group entries within 0.0001 of same `takerConversionRate / 1e18`
+- Sum amounts, combine provider names, show deposit count as (N)
+- Sort by price ascending (cheapest first)
+
+**Columns:** Price | (N) | Spread | Amount | Total (cumulative) | Providers
 - Amount = `remainingDeposits / 1e6` (USDC)
 - Total = running sum of Amount
-- If multiple entries share the same price (within 0.0001), group and sum amounts
+- APR = requires per-deposit fill rate data (web backend); show "-"
 
 Decoding notes:
 - `spreadBps` is an integer (basis points) — the exact value the maker configured. 1 bps = 0.01% resolution. Can be `null` for `MANAGER` or `NO_FLOOR` entries
