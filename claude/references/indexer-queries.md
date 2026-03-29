@@ -286,6 +286,36 @@ Note: `Intent` has no `deposit` relation field. Use `depositId` (string) directl
 
 Available Intent fields: `amount`, `conversionRate`, `depositId`, `expiryTime`, `fiatCurrency`, `fulfillTimestamp`, `fulfillTxHash`, `id`, `intentHash`, `isExpired`, `managerFee`, `managerFeeAmount`, `owner`, `paymentAmount`, `paymentCurrency`, `paymentMethodHash`, `paymentTimestamp`, `releasedAmount`, `signalTimestamp`, `signalTxHash`, `status`, `takerAmountNetFees`, `toAddress`, `updatedAt`, `verifier`.
 
+### 8. Tier lookup by wallet address
+
+Query all fulfilled intents for a wallet to calculate their total volume and determine their tier:
+
+```graphql
+{
+  Intent(
+    where: {
+      status: { _eq: "FULFILLED" }
+      owner: { _eq: "WALLET_ADDRESS" }
+    }
+  ) {
+    amount
+    fulfillTimestamp
+  }
+}
+```
+
+Sum all `amount / 1e6` values for total fulfilled volume in USD. Map to tier:
+
+| Volume | Tier | Base Cap |
+|--------|------|----------|
+| $0 | Peer Peasant | $100 |
+| $500+ | Peer | $250 |
+| $2,000+ | Peer Plus | $1,000 |
+| $10,000+ | Peer Pro | $2,500 |
+| $25,000+ | Peer Platinum | $5,000 |
+
+Multiply base cap by platform multiplier (5x for Revolut/Wise/Monzo/MercadoPago, 1.5x for Zelle, 1x for Venmo/CashApp, 0.75x for PayPal) for effective cap.
+
 ## curl Template
 
 ```bash

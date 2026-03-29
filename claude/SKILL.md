@@ -27,6 +27,7 @@ For **full query reference and hash tables**: Read `{baseDir}/references/indexer
 - **Language**: Match the user's language.
 - **Safety first**: Double-check amounts and currency before they send payment.
 - **No KYC emphasis**: Peer requires no identity verification — just a payment app and a wallet.
+- **Tier lookup**: If a user provides their wallet address, query their fulfilled intents to calculate volume and tier (see query 8 in indexer-queries.md).
 
 ## MANDATORY PREFLIGHT
 

@@ -141,3 +141,97 @@ Total fees:    ~GBP5.70 (~1.9%)
 ```
 
 **Always run the Relay quote** for non-Base destinations — don't estimate bridge fees.
+
+---
+
+## Scenario E: "Quiero proveer liquidez con $5,000 USDC en Revolut para EUR" (SELLING)
+
+> FICTIONAL NUMBERS — always query live data.
+
+**Step 1 — Parse the request:**
+- Role: Seller (liquidity provider)
+- Amount: 5,000 USDC
+- Payment method: Revolut
+- Currency: EUR
+- Goal: Earn yield passively
+
+**Step 2 — Check current EUR/Revolut market:**
+
+Query the order book for EUR to see what spreads competitors are offering:
+
+```bash
+curl -sL -X POST "https://indexer.zkp2p.xyz/v1/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Deposit(limit: 100, where: {acceptingIntents: {_eq: true}, status: {_eq: \"ACTIVE\"}, remainingDeposits: {_gt: \"0\"}}, order_by: {remainingDeposits: desc}) { depositId remainingDeposits intentAmountMin intentAmountMax rateManagerId currencies(where: {currencyCode: {_eq: \"0xfff16d60be267153303bbfa66e593fb8d06e24ea5ef24b6acca5224c2ca6b907\"}}) { takerConversionRate conversionRate spreadBps paymentMethodHash rateSource } } }"}'
+```
+
+**Step 3 — Analyze the competition:**
+
+Suppose the order book shows EUR/Revolut deposits at these spreads:
+- 3 deposits at +0.06% to +0.10% (tight, high volume)
+- 2 deposits at +0.50% to +0.66% (moderate)
+- 1 deposit at +1.50% (wide, slow fills)
+
+**Step 4 — Recommend a spread:**
+
+```
+Strategy options:
+
+1. Aggressive (+0.10%): Match the tightest spread
+   - Fast fills, low margin
+   - APR estimate: ~3.6% (if 10-day cycle)
+
+2. Balanced (+0.60%): Sit in the middle
+   - Moderate fills, decent margin
+   - APR estimate: ~21.9% (if 10-day cycle)
+
+3. Wide (+1.50%): Above most competition
+   - Slow fills, high margin per trade
+   - APR estimate: ~54.8% (if 10-day cycle)
+
+Recommendation: Start at +0.60% and adjust based on fill rate.
+If filling instantly -> raise spread. If idle for days -> lower it.
+```
+
+**Step 5 — Calculate expected APR:**
+
+```
+APR = (spread x 365 / daysPerCycle) x 100%
+
+At +0.60% spread, 10-day cycle:
+APR = (0.006 x 365 / 10) x 100% = ~21.9%
+
+On $5,000 deposit: ~$1,095/year or ~$91/month in fiat payments
+```
+
+**Step 6 — Guide the deposit setup:**
+
+```
+1. Go to peer.xyz -> "Sell" tab
+2. Connect wallet with 5,000 USDC on Base
+3. Click "New Deposit" -> enter 5,000 USDC
+4. Select Revolut -> enter your Revtag
+5. Set spread to +0.60% (ARM handles rate automatically)
+6. (Optional) Add more currencies: GBP, USD, CHF
+7. (Optional) Set floor rate: 0.92 EUR/USDC (protection against drops)
+8. (Optional) Set min order: 5 USDC, max order: 2,500 USDC
+9. Click Approve -> confirm transaction
+```
+
+**Step 7 — Present to user:**
+
+> Para proveer liquidez con $5,000 USDC via Revolut (EUR):
+>
+> - **Spread recomendado**: +0.60% (competitivo, buen balance)
+> - **APR estimado**: ~22% (~$91/mes)
+> - **Competencia**: 6 depositos activos, spreads de 0.06% a 1.50%
+> - **Tu posicion**: ranking 4 de 7 por precio
+>
+> Quieres que te guie paso a paso para configurarlo?
+
+**Important notes:**
+- APR depends on trade volume — if nobody trades EUR/Revolut, yield is zero
+- Seller must rebalance: convert received EUR back to USDC periodically
+- ARM auto-adjusts the rate from oracle — the spread stays fixed
+- Multiple currencies on one deposit = more potential buyers
+- Check arm.peer.xyz for oracle health if fills suddenly stop
