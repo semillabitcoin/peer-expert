@@ -130,17 +130,24 @@ Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scrol
 
 ### OpenClaw
 
-Copy the skill files to your OpenClaw skills directory:
+**Option A — From ClawHub** (if published):
+
+```bash
+openclaw skills install peer-expert
+```
+
+**Option B — Manual install:**
 
 ```bash
 git clone https://github.com/semillabitcoin/peer-expert.git /tmp/peer-expert && \
-cp -r /tmp/peer-expert/openclaw/ <YOUR_SKILLS_DIR>/peer-expert/ && \
+mkdir -p ~/.openclaw/skills/peer-expert/ && \
+cp -r /tmp/peer-expert/openclaw/* ~/.openclaw/skills/peer-expert/ && \
 rm -rf /tmp/peer-expert
 ```
 
-Replace `<YOUR_SKILLS_DIR>` with your OpenClaw skills path (e.g. `~/.openclaw/skills/`, a Docker volume mount, or whatever you set in `OPENCLAW_SKILLS_DIR`).
+This installs globally (`~/.openclaw/skills/`), so all your agents can use it. You can also install per-agent by copying to `<workspace>/skills/peer-expert/` instead.
 
-**Restart OpenClaw** (or start a new session), then test it from any connected channel:
+**Restart OpenClaw** (or start a new session), then test it from any connected channel (WhatsApp, Telegram, Discord, etc.):
 
 > "What's the cheapest way to buy $100 of crypto right now?"
 
