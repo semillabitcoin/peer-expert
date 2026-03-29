@@ -172,19 +172,31 @@ The skill activates automatically when it detects questions about peer.xyz, buyi
 
 ### Claude Code
 
-**Step 1 — Copy the skill files:**
+**Quick install (one command):**
 
 ```bash
-# Create the skills directory if it doesn't exist
-mkdir -p ~/.claude/skills/buy-on-peer/
-
-# Copy the skill
-cp -r claude/* ~/.claude/skills/buy-on-peer/
+git clone https://github.com/semillabitcoin/peer-expert.git /tmp/peer-expert && \
+mkdir -p ~/.claude/skills/buy-on-peer/ && \
+cp -r /tmp/peer-expert/claude/* ~/.claude/skills/buy-on-peer/ && \
+rm -rf /tmp/peer-expert
 ```
 
-**Step 2 — Restart Claude Code** (or start a new conversation).
+**Or step by step:**
 
-**Step 3 — Test it:**
+```bash
+# 1. Clone the repo
+git clone https://github.com/semillabitcoin/peer-expert.git
+cd peer-expert
+
+# 2. Copy the skill files
+mkdir -p ~/.claude/skills/buy-on-peer/
+cp -r claude/* ~/.claude/skills/buy-on-peer/
+
+# 3. Clean up
+cd .. && rm -rf peer-expert
+```
+
+**Restart Claude Code** (or start a new conversation), then test it:
 
 Say "buy-on-peer" or ask about peer.xyz. Example:
 > "What are the best rates to buy USDC with EUR right now?"
