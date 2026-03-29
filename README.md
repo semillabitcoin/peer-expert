@@ -130,45 +130,27 @@ Base (native), Ethereum, Arbitrum, Solana, Hyperliquid, HyperEVM, Polygon, Scrol
 
 ### OpenClaw
 
-OpenClaw is a self-hosted AI assistant that connects to your messaging apps. The peer-expert skill works with any OpenClaw installation — whether on Umbrel, a VPS, a Raspberry Pi, or your local machine.
+**Umbrel:** Install from the Umbrel app store — skills are managed automatically.
 
-**Step 1 — Copy the skill files:**
+**Docker / VPS / Local:** Copy the skill files to your OpenClaw skills directory.
 
 ```bash
-# Find your OpenClaw skills directory (common locations below)
-# Umbrel:      ~/umbrel/app-data/openclaw/skills/
-# Docker:      Check your docker-compose volume mount for /skills
-# Local:       ~/.openclaw/skills/
-# Custom:      Whatever path you set in OPENCLAW_SKILLS_DIR
-
-# Copy the skill
-cp -r openclaw/ <YOUR_SKILLS_DIR>/peer-expert/
+# Quick install (replace YOUR_SKILLS_DIR with your OpenClaw skills path)
+git clone https://github.com/semillabitcoin/peer-expert.git /tmp/peer-expert && \
+cp -r /tmp/peer-expert/openclaw/ <YOUR_SKILLS_DIR>/peer-expert/ && \
+rm -rf /tmp/peer-expert
 ```
 
-**Step 2 — Verify the structure:**
+Common skills directory locations:
+- **Docker:** Check your `docker-compose` volume mount for `/skills`
+- **Local:** `~/.openclaw/skills/`
+- **Custom:** Whatever path you set in `OPENCLAW_SKILLS_DIR`
 
-```
-<YOUR_SKILLS_DIR>/peer-expert/
-├── SKILL.md
-└── references/
-    └── indexer-queries.md
-```
+**Restart OpenClaw** (or start a new session), then test it from any connected channel (WhatsApp, Telegram, Discord, Slack, Signal, etc.):
 
-**Step 3 — Restart OpenClaw** (or start a new session).
-
-**Step 4 — Test it:**
-
-Send a message to your OpenClaw from any connected channel:
 > "What's the cheapest way to buy $100 of crypto right now?"
 
 The skill activates automatically when it detects questions about peer.xyz, buying crypto, or P2P onramping. You can also trigger it directly with `/peer_expert`.
-
-**Works from any channel connected to your OpenClaw:** WhatsApp, Telegram, Discord, Slack, Signal, etc.
-
-**Troubleshooting:**
-- Skill not activating? Make sure the `SKILL.md` file is in the root of the skill folder, not nested inside another directory.
-- OpenClaw needs internet access to query the Peer indexer (outbound HTTPS to `indexer.hyperindex.xyz`).
-- If you're behind a firewall or using Tor, make sure the indexer endpoint is reachable.
 
 ### Claude Code
 
